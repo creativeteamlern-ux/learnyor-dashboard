@@ -2320,6 +2320,19 @@ function openClass(className){
 
 
 /* =====================================================
+   HTML SAFETY HELPER
+===================================================== */
+
+function escapeHtml(value){
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+/* =====================================================
    LIVE ATTENDANCE API
 ===================================================== */
 
@@ -2585,6 +2598,32 @@ async function loadFullReport(){
     date.textContent="—";
     content.innerHTML='<div class="report-empty">'+escapeHtml(error.message||"API error")+'</div>';
   }
+}
+
+function setupLiveAttendance(){
+  const period=document.getElementById("dashboardPeriod");
+  const department=document.getElementById("dashboardDepartment");
+  const search=document.getElementById("dashboardSearch");
+
+  if(!period || !department || !search) return;
+
+  period.addEventListener("change", loadDashboard);
+  department.addEventListener("change", loadDashboard);
+  search.addEventListener("input", ()=>{
+    if(liveApiData){
+      const todayEmployees=Array.isArray(liveApiData.todayEmployees)
+        ? liveApiData.todayEmployees
+        : (liveApiData.employees || []);
+      const filtered=filterEmployees(
+        todayEmployees,
+        department.value,
+        search.value
+      );
+      renderCurrentStatus(filtered);
+    }
+  });
+
+  loadDashboard();
 }
 
 function setupReportControls(){
