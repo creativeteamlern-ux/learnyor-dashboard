@@ -959,6 +959,73 @@ input::placeholder{
   .report-head{
     flex-direction:column;
   }
+
+  /* Full Report mobile controls */
+  .report-controls{
+    display:grid;
+    grid-template-columns:repeat(10, minmax(0, 1fr));
+    gap:12px;
+    align-items:stretch;
+  }
+
+  /* Row 1 — Report type 50% + Department 50% */
+  .report-controls > #reportPeriod{
+    grid-column:1 / 6;
+    width:100%;
+    min-width:0;
+  }
+
+  .report-controls > #reportDepartment{
+    grid-column:6 / 11;
+    width:100%;
+    min-width:0;
+  }
+
+  /* Date range — two dates, 50% + 50% */
+  .report-controls > #reportRangeControls{
+    grid-column:1 / 11;
+    display:none;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+  }
+
+  .report-controls > #reportRangeControls.visible{
+    display:grid;
+  }
+
+  .report-controls > #reportRangeControls input{
+    width:100%;
+    min-width:0;
+  }
+
+  /* Month selector — 50% width */
+  .report-controls > #reportMonthControls{
+    grid-column:1 / 6;
+    display:none;
+  }
+
+  .report-controls > #reportMonthControls.visible{
+    display:block;
+  }
+
+  .report-controls > #reportMonthControls input{
+    width:100%;
+    min-width:0;
+  }
+
+  /* Search 70% + Generate 30% — applies to Today, Date range and Month */
+  .report-controls > #reportSearch{
+    grid-column:1 / 8;
+    width:100%;
+    min-width:0;
+  }
+
+  .report-controls > #reportGenerate{
+    grid-column:8 / 11;
+    width:100%;
+    min-width:0;
+    padding:0 10px;
+  }
 }
 
 /* ================= PLACEHOLDER ================= */
@@ -1003,12 +1070,26 @@ input::placeholder{
     grid-template-columns:1fr;
   }
 
-  .filters,
+  .filters{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+  }
+
+  .filters select{
+    width:100%;
+    min-width:0;
+  }
+
+  .filters input{
+    width:100%;
+    grid-column:1 / -1;
+  }
+
   .department-toolbar{
     flex-wrap:wrap;
   }
 
-  input,
   .department-toolbar input{
     width:100%;
   }
