@@ -1009,11 +1009,11 @@ input::placeholder{
   }
 
   .report-controls > #reportMonthControls{
-  grid-column:1 / 8;
-  grid-row:2;
-  order:3;
-  display:none;
-}
+    grid-column:1 / 8;
+    grid-row:2;
+    order:3;
+    display:none;
+  }
 
   .report-controls > #reportMonthControls.visible{
     display:block;
@@ -1627,7 +1627,7 @@ input::placeholder{
 
 <section id="employeeScreen" class="screen">
 
-<button class="page-back" onclick="showScreen('dashboardScreen')" aria-label="Back">←</button>
+<button class="page-back" onclick="showScreen('dashboardScreen', false)" aria-label="Back">←</button>
 
 <section class="hero">
   <h1>Employee Details</h1>
@@ -1651,7 +1651,7 @@ input::placeholder{
 
 <section id="detailScreen" class="screen">
 
-<button class="page-back" onclick="showScreen('employeeScreen')" aria-label="Back">←</button>
+<button class="page-back" onclick="showScreen('employeeScreen', false)" aria-label="Back">←</button>
 
 <div class="detail-card">
 
@@ -1729,7 +1729,7 @@ input::placeholder{
 
 <section id="departmentScreen" class="screen">
 
-<button class="page-back" onclick="showScreen('dashboardScreen')" aria-label="Back">←</button>
+<button class="page-back" onclick="showScreen('dashboardScreen', false)" aria-label="Back">←</button>
 
 <section class="hero">
   <h1>Department Report</h1>
@@ -1763,7 +1763,7 @@ input::placeholder{
 
 <section id="departmentDetailScreen" class="screen">
 
-<button class="page-back" onclick="showScreen('departmentScreen')" aria-label="Back">←</button>
+<button class="page-back" onclick="showScreen('departmentScreen', false)" aria-label="Back">←</button>
 
 <div class="department-detail-head">
 
@@ -1838,7 +1838,7 @@ input::placeholder{
 
 <section id="fullReportScreen" class="screen">
 
-<button class="page-back" onclick="showScreen('dashboardScreen')" aria-label="Back">←</button>
+<button class="page-back" onclick="showScreen('dashboardScreen', false)" aria-label="Back">←</button>
 
 <section class="hero">
   <h1>Full Report</h1>
@@ -1906,7 +1906,7 @@ input::placeholder{
 
 <section id="settingsScreen" class="screen">
 
-<button class="page-back" onclick="showScreen('dashboardScreen')" aria-label="Back">←</button>
+<button class="page-back" onclick="showScreen('dashboardScreen', false)" aria-label="Back">←</button>
 
 <section class="hero">
   <h1>Settings</h1>
@@ -1929,13 +1929,23 @@ input::placeholder{
    SCREEN NAVIGATION
 ===================================================== */
 
-function showScreen(id){
+function showScreen(id, addToHistory=true){
 
   document.querySelectorAll(".screen").forEach(screen=>{
     screen.classList.remove("active");
   });
 
-  document.getElementById(id).classList.add("active");
+  const screen=document.getElementById(id);
+  if(!screen) return;
+
+  screen.classList.add("active");
+
+  if(addToHistory){
+    const current=history.state?.screen;
+    if(current!==id){
+      history.pushState({screen:id}, "", "#" + id);
+    }
+  }
 
   window.scrollTo({
     top:0,
@@ -1944,6 +1954,38 @@ function showScreen(id){
 
   if(id==="fullReportScreen") loadFullReport();
 }
+
+// Browser / phone back button
+window.addEventListener("popstate",()=>{
+  const id=history.state?.screen || "dashboardScreen";
+  showScreen(id, false);
+});
+
+// Mobile left-edge swipe back
+let backTouchStartX=0;
+let backTouchStartY=0;
+
+document.addEventListener("touchstart",event=>{
+  const touch=event.changedTouches[0];
+  if(!touch) return;
+  backTouchStartX=touch.clientX;
+  backTouchStartY=touch.clientY;
+},{passive:true});
+
+document.addEventListener("touchend",event=>{
+  const touch=event.changedTouches[0];
+  if(!touch) return;
+
+  const dx=touch.clientX-backTouchStartX;
+  const dy=Math.abs(touch.clientY-backTouchStartY);
+
+  // Only trigger from the left edge, with a clear horizontal swipe.
+  if(backTouchStartX<=28 && dx>=70 && dy<=80){
+    if(history.length>1){
+      history.back();
+    }
+  }
+},{passive:true});
 
 
 /* =====================================================
@@ -2800,6 +2842,10 @@ function setupReportControls(){
 /* =====================================================
    INITIAL LOAD
 ===================================================== */
+if(!history.state?.screen){
+  history.replaceState({screen:"dashboardScreen"}, "", "#dashboardScreen");
+}
+
 
 renderDepartments();
 setupReportControls();
