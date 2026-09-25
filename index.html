@@ -295,7 +295,7 @@ input::placeholder{
 
 .employee-grid{
   display:grid;
-  grid-template-columns:repeat(3,1fr);
+  grid-template-columns:1fr;
   gap:15px;
 }
 
@@ -350,6 +350,35 @@ input::placeholder{
 
 .employee-current b{
   color:#ffffff;
+}
+
+.employee-detail-row{
+  display:grid;
+  grid-template-columns:2fr 1fr 1fr;
+  align-items:center;
+  gap:20px;
+  padding:18px 20px;
+  border:1px solid #29315f;
+  border-radius:15px;
+  background:#171e46;
+  margin-bottom:10px;
+}
+
+.employee-detail-name{
+  font-size:17px;
+  font-weight:750;
+  color:#ffffff;
+}
+
+.employee-detail-department{
+  font-size:15px;
+  color:#ffffff;
+}
+
+.employee-detail-status{
+  font-size:15px;
+  color:#ffffff;
+  text-align:right;
 }
 
 /* ================= EMPLOYEE DETAIL ================= */
@@ -1434,7 +1463,7 @@ input::placeholder{
 
 <section class="summary">
 
-  <div class="card employee-card">
+  <div class="card employee-card" onclick="openEmployeeList()">
     <div class="card-icon">👥</div>
 
     <div>
@@ -1507,75 +1536,8 @@ input::placeholder{
   <p>Select an employee to view their current work and activity.</p>
 </section>
 
-<div class="employee-grid">
+<div id="employeeGrid" class="employee-grid"></div>
 
-  <div class="employee-box" onclick="openEmployee('Ameen','AM','Video','9 CBSE','42.8 min','18')">
-    <div class="employee-top">
-      <div class="employee-avatar">AM</div>
-      <div>
-        <div class="employee-name">Ameen</div>
-        <div class="employee-dept">Video</div>
-      </div>
-    </div>
-    <div class="employee-current">Current: <b>9 CBSE</b></div>
-  </div>
-
-  <div class="employee-box" onclick="openEmployee('Muzammil','MZ','Video','8 CBSE','38.4 min','16')">
-    <div class="employee-top">
-      <div class="employee-avatar">MZ</div>
-      <div>
-        <div class="employee-name">Muzammil</div>
-        <div class="employee-dept">Video</div>
-      </div>
-    </div>
-    <div class="employee-current">Current: <b>8 CBSE</b></div>
-  </div>
-
-  <div class="employee-box" onclick="openEmployee('Rifana','RF','Script','Chapter 3','31.2 min','12')">
-    <div class="employee-top">
-      <div class="employee-avatar">RF</div>
-      <div>
-        <div class="employee-name">Rifana</div>
-        <div class="employee-dept">Script</div>
-      </div>
-    </div>
-    <div class="employee-current">Current: <b>Chapter 3</b></div>
-  </div>
-
-  <div class="employee-box" onclick="openEmployee('Fazeela','FZ','Script','Chapter 3','29.6 min','14')">
-    <div class="employee-top">
-      <div class="employee-avatar">FZ</div>
-      <div>
-        <div class="employee-name">Fazeela</div>
-        <div class="employee-dept">Script</div>
-      </div>
-    </div>
-    <div class="employee-current">Current: <b>Chapter 3</b></div>
-  </div>
-
-  <div class="employee-box" onclick="openEmployee('Vaishnav','VA','Production','Export queue','24.1 min','10')">
-    <div class="employee-top">
-      <div class="employee-avatar">VA</div>
-      <div>
-        <div class="employee-name">Vaishnav</div>
-        <div class="employee-dept">Production</div>
-      </div>
-    </div>
-    <div class="employee-current">Current: <b>Export queue</b></div>
-  </div>
-
-  <div class="employee-box" onclick="openEmployee('Noushiya','NU','Marketing','Campaign 2','18.7 min','9')">
-    <div class="employee-top">
-      <div class="employee-avatar">NU</div>
-      <div>
-        <div class="employee-name">Noushiya</div>
-        <div class="employee-dept">Marketing</div>
-      </div>
-    </div>
-    <div class="employee-current">Current: <b>Campaign 2</b></div>
-  </div>
-
-</div>
 </section>
 
 
@@ -1903,6 +1865,92 @@ function openEmployee(
   showScreen("detailScreen");
 }
 
+let employeeStatusData = null;
+
+async function openEmployeeList(){
+
+  showScreen("employeeScreen");
+
+  const grid=document.getElementById("employeeGrid");
+
+  if(!grid) return;
+
+  grid.innerHTML=`
+    <div class="report-empty">
+      Loading employees...
+    </div>
+  `;
+
+  try{
+
+    const response=await fetch(
+      `${ATTENDANCE_API}?period=today&department=all`
+    );
+
+    const data=await response.json();
+
+    if(!data || data.success===false){
+      throw new Error(data?.message || "Attendance API error");
+    }
+
+    employeeStatusData=data;
+
+    renderEmployeeList(
+      Array.isArray(data.employees)
+        ? data.employees
+        : []
+    );
+
+  }catch(error){
+
+    console.error("Employee list error:",error);
+
+    grid.innerHTML=`
+      <div class="report-empty">
+        Unable to load employee data.
+      </div>
+    `;
+  }
+}
+
+
+function renderEmployeeList(employees){
+
+  const grid=document.getElementById("employeeGrid");
+
+  if(!grid) return;
+
+  if(!employees.length){
+
+    grid.innerHTML=`
+      <div class="report-empty">
+        No employee data found.
+      </div>
+    `;
+
+    return;
+  }
+
+  grid.innerHTML=employees.map(employee=>`
+
+    <div class="employee-detail-row">
+
+      <div class="employee-detail-name">
+        ${escapeHtml(employee.name || "—")}
+      </div>
+
+      <div class="employee-detail-department">
+        ${escapeHtml(employee.department || "—")}
+      </div>
+
+      <div class="employee-detail-status">
+        ${escapeHtml(employee.status || "—")}
+      </div>
+
+    </div>
+
+  `).join("");
+}
 
 /* =====================================================
    DEPARTMENT DATA
