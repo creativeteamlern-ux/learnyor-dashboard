@@ -968,22 +968,32 @@ input::placeholder{
     align-items:stretch;
   }
 
-  /* Row 1 — Report type 50% + Department 50% */
+  /* Mobile report layout
+     Row 1: Report type 50% + Department 50%
+     Row 2: Date range 50% + Date range 50%, OR Month 50%
+     Row 3: Search 70% + Generate 30%
+  */
+
   .report-controls > #reportPeriod{
     grid-column:1 / 6;
+    grid-row:1;
+    order:1;
     width:100%;
     min-width:0;
   }
 
   .report-controls > #reportDepartment{
     grid-column:6 / 11;
+    grid-row:1;
+    order:2;
     width:100%;
     min-width:0;
   }
 
-  /* Date range — two dates, 50% + 50% */
   .report-controls > #reportRangeControls{
     grid-column:1 / 11;
+    grid-row:2;
+    order:3;
     display:none;
     grid-template-columns:1fr 1fr;
     gap:12px;
@@ -998,9 +1008,10 @@ input::placeholder{
     min-width:0;
   }
 
-  /* Month selector — 50% width */
   .report-controls > #reportMonthControls{
     grid-column:1 / 6;
+    grid-row:2;
+    order:3;
     display:none;
   }
 
@@ -1013,15 +1024,18 @@ input::placeholder{
     min-width:0;
   }
 
-  /* Search 70% + Generate 30% — applies to Today, Date range and Month */
   .report-controls > #reportSearch{
     grid-column:1 / 8;
+    grid-row:3;
+    order:4;
     width:100%;
     min-width:0;
   }
 
   .report-controls > #reportGenerate{
     grid-column:8 / 11;
+    grid-row:3;
+    order:5;
     width:100%;
     min-width:0;
     padding:0 10px;
