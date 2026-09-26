@@ -160,6 +160,24 @@ input::placeholder{
   align-items:center;
 }
 
+.employee-summary-row{
+  display:flex;
+  align-items:flex-end;
+  gap:48px;
+  margin-top:4px;
+}
+
+.employee-summary-row .number{
+  margin:0;
+}
+
+.employee-period-label{
+  margin-top:10px;
+  font-size:16px;
+  color:#aeb7dc;
+}
+
+
 .card-icon{
   width:72px;
   height:72px;
@@ -1532,9 +1550,6 @@ input::placeholder{
 </header>
 
 <section class="hero">
-  <h1>Team Overview</h1>
-  <p>Monitor employee activity and current work status.</p>
-
   <div class="filters">
     <select id="dashboardPeriod">
       <option value="today">Today</option>
@@ -1566,7 +1581,7 @@ input::placeholder{
 
     <div>
       <div class="label">EMPLOYEES</div>
-      <div id="employeeCount" class="number">—</div>
+      <div id="employeeSummaryCount" class="number">—</div>
       <div id="employeePeriodLabel" class="active">loading...</div>
     </div>
   </div>
@@ -2035,7 +2050,6 @@ async function openEmployeeList(){
   showScreen("employeeScreen");
 
   const grid=document.getElementById("employeeGrid");
-
   if(!grid) return;
 
   grid.innerHTML=`
@@ -2044,11 +2058,17 @@ async function openEmployeeList(){
     </div>
   `;
 
+  const period=document.getElementById("dashboardPeriod")?.value || "today";
+  const department=document.getElementById("dashboardDepartment")?.value || "all";
+  const search=(document.getElementById("dashboardSearch")?.value || "").trim().toLowerCase();
+
   try{
 
     const response=await fetch(
-      `${ATTENDANCE_API}?period=today&department=all`
+      `${ATTENDANCE_API}?period=${encodeURIComponent(period)}&department=${encodeURIComponent(department)}`
     );
+
+    if(!response.ok) throw new Error("HTTP "+response.status);
 
     const data=await response.json();
 
@@ -2058,11 +2078,19 @@ async function openEmployeeList(){
 
     employeeStatusData=data;
 
-    renderEmployeeList(
-      Array.isArray(data.employees)
-        ? data.employees
-        : []
-    );
+    // Today uses the current employee status list.
+    // Week/month use the API's cumulative employee attendance list.
+    let employees=period==="today"
+      ? (Array.isArray(data.employees) ? data.employees : [])
+      : (Array.isArray(data.cumulativeEmployees) ? data.cumulativeEmployees : []);
+
+    if(search){
+      employees=employees.filter(employee=>
+        String(employee.name||"").toLowerCase().includes(search)
+      );
+    }
+
+    renderEmployeeList(employees,period);
 
   }catch(error){
 
@@ -2077,52 +2105,116 @@ async function openEmployeeList(){
 }
 
 
-function renderEmployeeList(employees){
+function renderEmployeeList(employees,period="today"){
 
   const grid=document.getElementById("employeeGrid");
-
   if(!grid) return;
 
   if(!employees.length){
-
     grid.innerHTML=`
       <div class="report-empty">
         No employee data found.
       </div>
     `;
+    return;
+  }
+
+  if(period!=="today"){
+    // Week/month: include EVERY employee from the attendance API.
+    // Employees with no attendance in the selected period are kept
+    // at the bottom with 0 days.
+    const cumulativeMap=new Map(
+      employees.map(employee=>[
+        String(employee.name||"").trim().toLowerCase(),
+        employee
+      ])
+    );
+
+    const allEmployees=Array.isArray(employeeStatusData?.employees)
+      ? employeeStatusData.employees.map(employee=>{
+          const key=String(employee.name||"").trim().toLowerCase();
+          const cumulative=cumulativeMap.get(key);
+
+          return {
+            ...employee,
+            days:Number(cumulative?.days||0),
+            department:
+              cumulative?.department ||
+              employee.department ||
+              "—"
+          };
+        })
+      : [...employees];
+
+    const ordered=allEmployees.sort((a,b)=>{
+      const daysB=Number(b.days||0);
+      const daysA=Number(a.days||0);
+
+      // Employees with attendance first; zero-day employees last.
+      if(daysB!==daysA) return daysB-daysA;
+
+      return String(a.name||"").localeCompare(
+        String(b.name||""),
+        undefined,
+        {sensitivity:"base"}
+      );
+    });
+
+    grid.innerHTML=ordered.map(employee=>{
+      const days=Number(employee.days||0);
+
+      return `
+        <div class="employee-detail-row">
+          <div class="employee-detail-name">${escapeHtml(employee.name||"—")}</div>
+          <div class="employee-detail-department">${escapeHtml(employee.department||"—")}</div>
+          <div class="employee-detail-status">
+            <span class="employee-status-dot ${days>0?"active":"no-attendance"}"></span>
+            Present · ${days} ${days===1?"day":"days"}
+          </div>
+        </div>
+      `;
+    }).join("");
 
     return;
   }
 
-  // Keep the existing employee order, but place Active employees first.
-  const orderedEmployees=[...employees].sort((a,b)=>{
-    const aActive=String(a.status || "").trim().toLowerCase()==="active";
-    const bActive=String(b.status || "").trim().toLowerCase()==="active";
-    return Number(bActive)-Number(aActive);
+  // Today: Active first, then Present, then WFH, Leave and No attendance.
+  const getAttendanceState=(employee)=>{
+    const raw=String(employee.status || "").trim().toLowerCase();
+
+    if(raw==="active" || raw==="reached")
+      return {label:"Active",css:"active",rank:1};
+
+    if(raw==="present" || raw==="left")
+      return {label:"Present",css:"active",rank:2};
+
+    if(raw==="wfh" || raw==="work from home")
+      return {label:"WFH",css:"wfh",rank:3};
+
+    if(raw==="leave")
+      return {label:"Leave",css:"leave",rank:4};
+
+    return {label:employee.status || "No attendance",css:"no-attendance",rank:5};
+  };
+
+  const ordered=[...employees].sort((a,b)=>{
+    return getAttendanceState(a).rank-getAttendanceState(b).rank;
   });
 
-  grid.innerHTML=orderedEmployees.map(employee=>`
+  grid.innerHTML=ordered.map(employee=>{
+    const attendance=getAttendanceState(employee);
 
-    <div class="employee-detail-row">
-
-      <div class="employee-detail-name">
-        ${escapeHtml(employee.name || "—")}
+    return `
+      <div class="employee-detail-row">
+        <div class="employee-detail-name">${escapeHtml(employee.name||"—")}</div>
+        <div class="employee-detail-department">${escapeHtml(employee.department||"—")}</div>
+        <div class="employee-detail-status">
+          <span class="employee-status-dot ${attendance.css}"></span>
+          ${escapeHtml(attendance.label)}
+        </div>
       </div>
-
-      <div class="employee-detail-department">
-        ${escapeHtml(employee.department || "—")}
-      </div>
-
-      <div class="employee-detail-status">
-        <span class="employee-status-dot ${
-          String(employee.status || "").toLowerCase().replace(/\s+/g,"-")
-        }"></span>
-        ${escapeHtml(employee.status || "—")}
-      </div>
-
-    </div>
-
-  `).join("");
+    `;
+  }).join("");
 }
 
 /* =====================================================
@@ -2590,24 +2682,47 @@ async function fetchAttendance(period="today",department="all"){
   }
 }
 
-function getWorkingCount(data,period){
-  if(!data) return null;
+function getEmployeeSummary(data,period,search,todayData){
+  if(!data) return {active:null,present:null};
+
+  // Today = currently active employees.
+  // Week / month = the cumulative attendance total returned by the API.
+  // The API already applies the selected department filter.
   if(period==="today"){
-    if(Number.isFinite(Number(data.workingToday))) return Number(data.workingToday);
-    return (data.employees||[]).filter(e=>["Active","WFH"].includes(e.status)).length;
+    const employees=Array.isArray(data.employees)?data.employees:[];
+    const active=employees.filter(employee=>{
+      const status=String(employee.status||"").trim().toLowerCase();
+      return status==="active" || status==="reached" || status==="wfh";
+    }).length;
+
+    return {active,present:data.totalAttendance ?? active};
   }
-  if(Number.isFinite(Number(data.activeEmployees))) return Number(data.activeEmployees);
-  if(Number.isFinite(Number(data.workingToday)) && period==="today") return Number(data.workingToday);
-  return null;
+
+  const total=Number(data.totalAttendance);
+  const present=Number.isFinite(total) ? total : 0;
+
+  return {
+    active:null,
+    present
+  };
 }
 
-function updateEmployeeCard(data,period){
-  const count=document.getElementById("employeeCount");
+function updateEmployeeCard(data,period,search,todayData){
+  const count=document.getElementById("employeeSummaryCount");
   const label=document.getElementById("employeePeriodLabel");
-  const value=getWorkingCount(data,period);
+  const summary=getEmployeeSummary(data,period,search,todayData);
 
-  count.textContent=value===null?"—":value;
-  label.textContent=period==="today"?"active today":period==="week"?"present this week":"present this month";
+  const value=period==="today" ? summary.active : summary.present;
+
+  if(count) count.textContent=value===null ? "—" : value;
+
+  if(label){
+    label.textContent=period==="today"
+      ? "active today"
+      : period==="week"
+        ? "present this week"
+        : "present this month";
+  }
 }
 
 function renderCurrentStatus(employees){
@@ -2655,11 +2770,12 @@ async function loadDashboard(){
   const search=document.getElementById("dashboardSearch").value;
 
   const data=await fetchAttendance(period,department);
-  updateEmployeeCard(data,period);
+
+  updateEmployeeCard(data,period,search,null);
 
   if(data){
-    const todayEmployees=Array.isArray(data.todayEmployees)?data.todayEmployees:data.employees||[];
-    const filtered=filterEmployees(todayEmployees,department,search);
+    const periodEmployees=Array.isArray(data.employees)?data.employees:[];
+    const filtered=filterEmployees(periodEmployees,department,search);
     renderCurrentStatus(filtered);
   }else{
     renderCurrentStatus([]);
@@ -2832,11 +2948,11 @@ function setupLiveAttendance(){
   department.addEventListener("change", loadDashboard);
   search.addEventListener("input", ()=>{
     if(liveApiData){
-      const todayEmployees=Array.isArray(liveApiData.todayEmployees)
-        ? liveApiData.todayEmployees
-        : (liveApiData.employees || []);
+      const periodEmployees=Array.isArray(liveApiData.employees)
+        ? liveApiData.employees
+        : [];
       const filtered=filterEmployees(
-        todayEmployees,
+        periodEmployees,
         department.value,
         search.value
       );
