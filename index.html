@@ -1627,7 +1627,7 @@ input::placeholder{
 
 <section id="employeeScreen" class="screen">
 
-<button class="page-back" onclick="showScreen('dashboardScreen', false)" aria-label="Back">←</button>
+<button class="page-back" onclick="goBack()" aria-label="Back">←</button>
 
 <section class="hero">
   <h1>Employee Details</h1>
@@ -1651,7 +1651,7 @@ input::placeholder{
 
 <section id="detailScreen" class="screen">
 
-<button class="page-back" onclick="showScreen('employeeScreen', false)" aria-label="Back">←</button>
+<button class="page-back" onclick="goBack()" aria-label="Back">←</button>
 
 <div class="detail-card">
 
@@ -1729,7 +1729,7 @@ input::placeholder{
 
 <section id="departmentScreen" class="screen">
 
-<button class="page-back" onclick="showScreen('dashboardScreen', false)" aria-label="Back">←</button>
+<button class="page-back" onclick="goBack()" aria-label="Back">←</button>
 
 <section class="hero">
   <h1>Department Report</h1>
@@ -1763,7 +1763,7 @@ input::placeholder{
 
 <section id="departmentDetailScreen" class="screen">
 
-<button class="page-back" onclick="showScreen('departmentScreen', false)" aria-label="Back">←</button>
+<button class="page-back" onclick="goBack()" aria-label="Back">←</button>
 
 <div class="department-detail-head">
 
@@ -1838,7 +1838,7 @@ input::placeholder{
 
 <section id="fullReportScreen" class="screen">
 
-<button class="page-back" onclick="showScreen('dashboardScreen', false)" aria-label="Back">←</button>
+<button class="page-back" onclick="goBack()" aria-label="Back">←</button>
 
 <section class="hero">
   <h1>Full Report</h1>
@@ -1906,7 +1906,7 @@ input::placeholder{
 
 <section id="settingsScreen" class="screen">
 
-<button class="page-back" onclick="showScreen('dashboardScreen', false)" aria-label="Back">←</button>
+<button class="page-back" onclick="goBack()" aria-label="Back">←</button>
 
 <section class="hero">
   <h1>Settings</h1>
@@ -1929,6 +1929,11 @@ input::placeholder{
    SCREEN NAVIGATION
 ===================================================== */
 
+// Keep one reliable history entry for the dashboard.
+if (!history.state || !history.state.screen) {
+  history.replaceState({screen:"dashboardScreen"}, "", "#dashboardScreen");
+}
+
 function showScreen(id, addToHistory=true){
 
   document.querySelectorAll(".screen").forEach(screen=>{
@@ -1947,43 +1952,55 @@ function showScreen(id, addToHistory=true){
     }
   }
 
-  window.scrollTo({
-    top:0,
-    behavior:"smooth"
-  });
+  window.scrollTo({top:0, behavior:"smooth"});
 
   if(id==="fullReportScreen") loadFullReport();
 }
 
-// Browser / phone back button
+// Use this for the visible ← buttons.
+// It goes through the same browser history as the phone Back button.
+function goBack(){
+  if(history.state?.screen && history.state.screen !== "dashboardScreen"){
+    history.back();
+  } else {
+    showScreen("dashboardScreen", false);
+  }
+}
+
+// Browser / Android / iPhone Back button
 window.addEventListener("popstate",()=>{
   const id=history.state?.screen || "dashboardScreen";
   showScreen(id, false);
 });
 
-// Mobile left-edge swipe back
+// Mobile left-edge swipe back.
 let backTouchStartX=0;
 let backTouchStartY=0;
+let backTouchTracking=false;
 
 document.addEventListener("touchstart",event=>{
-  const touch=event.changedTouches[0];
+  const touch=event.touches[0];
   if(!touch) return;
+
   backTouchStartX=touch.clientX;
   backTouchStartY=touch.clientY;
+  backTouchTracking=(touch.clientX <= 35);
 },{passive:true});
 
 document.addEventListener("touchend",event=>{
+  if(!backTouchTracking) return;
+
   const touch=event.changedTouches[0];
   if(!touch) return;
 
   const dx=touch.clientX-backTouchStartX;
   const dy=Math.abs(touch.clientY-backTouchStartY);
 
-  // Only trigger from the left edge, with a clear horizontal swipe.
-  if(backTouchStartX<=28 && dx>=70 && dy<=80){
-    if(history.length>1){
-      history.back();
-    }
+  backTouchTracking=false;
+
+  // Clear rightward swipe starting from the left edge.
+  if(dx>=70 && dy<=80){
+    goBack();
   }
 },{passive:true});
 
@@ -2077,7 +2094,14 @@ function renderEmployeeList(employees){
     return;
   }
 
-  grid.innerHTML=employees.map(employee=>`
+  // Keep the existing employee order, but place Active employees first.
+  const orderedEmployees=[...employees].sort((a,b)=>{
+    const aActive=String(a.status || "").trim().toLowerCase()==="active";
+    const bActive=String(b.status || "").trim().toLowerCase()==="active";
+    return Number(bActive)-Number(aActive);
+  });
+
+  grid.innerHTML=orderedEmployees.map(employee=>`
 
     <div class="employee-detail-row">
 
