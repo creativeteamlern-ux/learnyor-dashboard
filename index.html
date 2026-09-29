@@ -2053,23 +2053,42 @@ function getEmployeeInitials(name){
     .toUpperCase() || "—";
 }
 
-function getEmployeeAttendanceSummary(name){
-  const list=Array.isArray(employeeStatusData?.employeeAttendanceSummary)
-    ? employeeStatusData.employeeAttendanceSummary
-    : [];
+function getEmployeeAttendanceSummary(employee){
+  const name=String(employee?.name || employee || "").trim();
+  const key=name.toLowerCase();
 
-  const key=String(name || "").trim().toLowerCase();
+  // The attendance API now returns these fields directly on each employee.
+  // Keep a small fallback for older responses.
+  const direct = employee && typeof employee === "object" ? employee : null;
 
-  return list.find(employee=>
-    String(employee.name || "").trim().toLowerCase()===key
-  ) || {
+  const detailLists=[
+    Array.isArray(employeeStatusData?.employees) ? employeeStatusData.employees : [],
+    Array.isArray(employeeStatusData?.cumulativeEmployees) ? employeeStatusData.cumulativeEmployees : [],
+    Array.isArray(employeeStatusData?.employeeAttendanceSummary) ? employeeStatusData.employeeAttendanceSummary : []
+  ];
+
+  let matched=null;
+  for(const list of detailLists){
+    matched=list.find(item=>
+      String(item?.name || "").trim().toLowerCase()===key
+    );
+    if(matched) break;
+  }
+
+  return {
     name,
-    department:"",
-    activeDays:0,
-    presentDays:0,
-    wfhDays:0,
-    leaveDays:0,
-    attendanceDays:0
+    department:direct?.department || matched?.department || "",
+    activeDays:Number(direct?.activeDays ?? matched?.activeDays ?? 0),
+    presentDays:Number(direct?.presentDays ?? matched?.presentDays ?? 0),
+    wfhDays:Number(direct?.wfhDays ?? matched?.wfhDays ?? 0),
+    leaveDays:Number(direct?.leaveDays ?? matched?.leaveDays ?? 0),
+    attendanceDays:Number(
+      direct?.attendanceDays ??
+      matched?.attendanceDays ??
+      direct?.days ??
+      matched?.days ??
+      0
+    )
   };
 }
 
@@ -2077,7 +2096,7 @@ function openEmployeeDetail(employee, period){
   const name=String(employee?.name || "").trim();
   if(!name) return;
 
-  const summary=getEmployeeAttendanceSummary(name);
+  const summary=getEmployeeAttendanceSummary(employee);
 
   document.getElementById("detailName").textContent=name;
   document.getElementById("detailAvatar").textContent=getEmployeeInitials(name);
@@ -2186,21 +2205,38 @@ function renderEmployeeList(employees,period="today"){
       ])
     );
 
-    const allEmployees=Array.isArray(employeeStatusData?.employees)
-      ? employeeStatusData.employees.map(employee=>{
-          const key=String(employee.name||"").trim().toLowerCase();
-          const cumulative=cumulativeMap.get(key);
+    const currentEmployees=Array.isArray(employeeStatusData?.employees)
+      ? employeeStatusData.employees
+      : [];
 
-          return {
-            ...employee,
-            days:Number(cumulative?.days||0),
-            department:
-              cumulative?.department ||
-              employee.department ||
-              "—"
-          };
-        })
-      : [...employees];
+    const currentMap=new Map(
+      currentEmployees.map(employee=>[
+        String(employee.name||"").trim().toLowerCase(),
+        employee
+      ])
+    );
+
+    const allEmployees=[...new Map(
+      [...currentEmployees, ...employees].map(employee=>[
+        String(employee.name||"").trim().toLowerCase(),
+        employee
+      ])
+    ).values()].map(employee=>{
+      const key=String(employee.name||"").trim().toLowerCase();
+      const cumulative=cumulativeMap.get(key);
+      const current=currentMap.get(key);
+
+      return {
+        ...(current || {}),
+        ...employee,
+        days:Number(cumulative?.days ?? employee?.days ?? 0),
+        department:
+          employee.department ||
+          cumulative?.department ||
+          current?.department ||
+          "—"
+      };
+    });
 
     const ordered=allEmployees.sort((a,b)=>{
       const daysB=Number(b.days||0);
@@ -2288,35 +2324,6 @@ function renderEmployeeList(employees,period="today"){
     });
   });
 }
-
-/* =====================================================
-   EMPLOYEE ROW CLICK FALLBACK
-===================================================== */
-
-document.addEventListener("click",(event)=>{
-  const row=event.target.closest?.(".employee-click-row");
-  if(!row) return;
-  if(row.dataset.employeeIndex==null) return;
-  if(row.closest("#employeeGrid")==null) return;
-
-  // The row listener normally handles this. This fallback is intentionally
-  // harmless if the event has already opened the detail screen.
-  if(document.getElementById("detailScreen")?.classList.contains("active")) return;
-
-  const index=Number(row.dataset.employeeIndex);
-  const period=document.getElementById("dashboardPeriod")?.value || "today";
-  const currentData=employeeStatusData;
-
-  let list=[];
-  if(period==="today"){
-    list=Array.isArray(currentData?.employees) ? currentData.employees : [];
-  }else{
-    list=Array.isArray(currentData?.cumulativeEmployees) ? currentData.cumulativeEmployees : [];
-  }
-
-  if(list[index]) openEmployeeDetail(list[index],period);
-});
-
 
 /* =====================================================
    DEPARTMENT DATA
