@@ -1686,20 +1686,38 @@ input::placeholder{
   <div class="detail-grid">
 
     <div class="detail-stat">
-      <span>CURRENT STATUS</span>
-      <b id="detailCurrent">9 CBSE</b>
+      <span>ACTIVE DAYS</span>
+      <b id="detailActiveDays">0</b>
     </div>
 
     <div class="detail-stat">
-      <span>TODAY</span>
-      <b id="detailMinutes">42.8 min</b>
+      <span>PRESENT DAYS</span>
+      <b id="detailPresentDays">0</b>
     </div>
 
     <div class="detail-stat">
-      <span>COMPLETED</span>
-      <b id="detailCompleted">18</b>
+      <span>WFH DAYS</span>
+      <b id="detailWfhDays">0</b>
     </div>
 
+    <div class="detail-stat">
+      <span>LEAVE DAYS</span>
+      <b id="detailLeaveDays">0</b>
+    </div>
+
+  </div>
+
+  <div class="label" style="margin-bottom:11px">
+    ATTENDANCE SUMMARY
+  </div>
+
+  <div class="activity-list" id="employeeAttendanceSummary">
+    <div class="activity-row">
+      <div>
+        <b>Total attendance days</b>
+        <small id="detailAttendanceDays">0 attendance days</small>
+      </div>
+    </div>
   </div>
 
   <div class="label" style="margin-bottom:11px">
@@ -2024,21 +2042,59 @@ document.addEventListener("touchend",event=>{
    EMPLOYEE DETAILS
 ===================================================== */
 
-function openEmployee(
-  name,
-  initials,
-  department,
-  current,
-  minutes,
-  completed
-){
+function getEmployeeInitials(name){
+  return String(name || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0,2)
+    .map(part=>part[0])
+    .join("")
+    .toUpperCase() || "—";
+}
+
+function getEmployeeAttendanceSummary(name){
+  const list=Array.isArray(employeeStatusData?.employeeAttendanceSummary)
+    ? employeeStatusData.employeeAttendanceSummary
+    : [];
+
+  const key=String(name || "").trim().toLowerCase();
+
+  return list.find(employee=>
+    String(employee.name || "").trim().toLowerCase()===key
+  ) || {
+    name,
+    department:"",
+    activeDays:0,
+    presentDays:0,
+    wfhDays:0,
+    leaveDays:0,
+    attendanceDays:0
+  };
+}
+
+function openEmployeeDetail(employee, period){
+  const name=String(employee?.name || "").trim();
+  if(!name) return;
+
+  const summary=getEmployeeAttendanceSummary(name);
 
   document.getElementById("detailName").textContent=name;
-  document.getElementById("detailAvatar").textContent=initials;
-  document.getElementById("detailRole").textContent=department;
-  document.getElementById("detailCurrent").textContent=current;
-  document.getElementById("detailMinutes").textContent=minutes;
-  document.getElementById("detailCompleted").textContent=completed;
+  document.getElementById("detailAvatar").textContent=getEmployeeInitials(name);
+  document.getElementById("detailRole").textContent=
+    employee?.department || summary.department || "—";
+
+  document.getElementById("detailCurrent").textContent=
+    period==="today"
+      ? String(employee?.status || "No attendance")
+      : `${Number(employee?.days || summary.attendanceDays || 0)} attendance days`;
+
+  document.getElementById("detailActiveDays").textContent=Number(summary.activeDays || 0);
+  document.getElementById("detailPresentDays").textContent=Number(summary.presentDays || 0);
+  document.getElementById("detailWfhDays").textContent=Number(summary.wfhDays || 0);
+  document.getElementById("detailLeaveDays").textContent=Number(summary.leaveDays || 0);
+  document.getElementById("detailAttendanceDays").textContent=
+    `${Number(summary.attendanceDays || 0)} attendance days`;
 
   showScreen("detailScreen");
 }
@@ -2160,11 +2216,13 @@ function renderEmployeeList(employees,period="today"){
       );
     });
 
-    grid.innerHTML=ordered.map(employee=>{
+    grid.innerHTML=ordered.map((employee,index)=>{
       const days=Number(employee.days||0);
 
       return `
-        <div class="employee-detail-row">
+        <div class="employee-detail-row employee-click-row"
+             data-employee-index="${index}"
+             style="cursor:pointer">
           <div class="employee-detail-name">${escapeHtml(employee.name||"—")}</div>
           <div class="employee-detail-department">${escapeHtml(employee.department||"—")}</div>
           <div class="employee-detail-status">
@@ -2174,6 +2232,12 @@ function renderEmployeeList(employees,period="today"){
         </div>
       `;
     }).join("");
+
+    grid.querySelectorAll(".employee-click-row").forEach((row,index)=>{
+      row.addEventListener("click",()=>{
+        openEmployeeDetail(ordered[index],period);
+      });
+    });
 
     return;
   }
@@ -2205,7 +2269,9 @@ function renderEmployeeList(employees,period="today"){
     const attendance=getAttendanceState(employee);
 
     return `
-      <div class="employee-detail-row">
+      <div class="employee-detail-row"
+           onclick='openEmployeeDetail(${JSON.stringify(employee)}, ${JSON.stringify(period)})'
+           style="cursor:pointer">
         <div class="employee-detail-name">${escapeHtml(employee.name||"—")}</div>
         <div class="employee-detail-department">${escapeHtml(employee.department||"—")}</div>
         <div class="employee-detail-status">
