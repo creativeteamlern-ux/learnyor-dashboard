@@ -2265,12 +2265,12 @@ function renderEmployeeList(employees,period="today"){
     return getAttendanceState(a).rank-getAttendanceState(b).rank;
   });
 
-  grid.innerHTML=ordered.map(employee=>{
+  grid.innerHTML=ordered.map((employee,index)=>{
     const attendance=getAttendanceState(employee);
 
     return `
-      <div class="employee-detail-row"
-           onclick='openEmployeeDetail(${JSON.stringify(employee)}, ${JSON.stringify(period)})'
+      <div class="employee-detail-row employee-click-row"
+           data-employee-index="${index}"
            style="cursor:pointer">
         <div class="employee-detail-name">${escapeHtml(employee.name||"—")}</div>
         <div class="employee-detail-department">${escapeHtml(employee.department||"—")}</div>
@@ -2281,7 +2281,42 @@ function renderEmployeeList(employees,period="today"){
       </div>
     `;
   }).join("");
+
+  grid.querySelectorAll(".employee-click-row").forEach((row,index)=>{
+    row.addEventListener("click",()=>{
+      openEmployeeDetail(ordered[index],period);
+    });
+  });
 }
+
+/* =====================================================
+   EMPLOYEE ROW CLICK FALLBACK
+===================================================== */
+
+document.addEventListener("click",(event)=>{
+  const row=event.target.closest?.(".employee-click-row");
+  if(!row) return;
+  if(row.dataset.employeeIndex==null) return;
+  if(row.closest("#employeeGrid")==null) return;
+
+  // The row listener normally handles this. This fallback is intentionally
+  // harmless if the event has already opened the detail screen.
+  if(document.getElementById("detailScreen")?.classList.contains("active")) return;
+
+  const index=Number(row.dataset.employeeIndex);
+  const period=document.getElementById("dashboardPeriod")?.value || "today";
+  const currentData=employeeStatusData;
+
+  let list=[];
+  if(period==="today"){
+    list=Array.isArray(currentData?.employees) ? currentData.employees : [];
+  }else{
+    list=Array.isArray(currentData?.cumulativeEmployees) ? currentData.cumulativeEmployees : [];
+  }
+
+  if(list[index]) openEmployeeDetail(list[index],period);
+});
+
 
 /* =====================================================
    DEPARTMENT DATA
