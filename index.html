@@ -1117,25 +1117,49 @@ input::placeholder{
     gap:12px;
   }
 
-  .filters select{
-    width:100%;
-    min-width:0;
-  }
-
+  .filters select,
   .filters input{
     width:100%;
-    grid-column:1 / -1;
+    min-width:0;
+    box-sizing:border-box;
   }
 
-  #dashboardMonth{
+  /* Today / This week
+     Period 50% | Department 50%
+     Search 100% */
+  .filters > #dashboardPeriod{
+    grid-column:1;
+    grid-row:1;
+  }
+
+  .filters > #dashboardDepartment{
+    grid-column:2;
+    grid-row:1;
+  }
+
+  .filters > #dashboardSearch{
+    grid-column:1 / -1;
+    grid-row:2;
+  }
+
+  /* Select month
+     Select month 50% | Department 50%
+     Month 50%       | Search 50% */
+  .filters > #dashboardMonth{
     display:none;
     width:100%;
     min-width:0;
-    grid-column:1 / -1;
+    grid-column:1;
+    grid-row:2;
   }
 
-  #dashboardMonth.visible{
+  .filters > #dashboardMonth.visible{
     display:block;
+  }
+
+  .filters:has(> #dashboardMonth.visible) > #dashboardSearch{
+    grid-column:2;
+    grid-row:2;
   }
 
   .department-toolbar{
