@@ -114,6 +114,15 @@ button,input,select{font:inherit}
   margin-bottom:32px;
 }
 
+#dashboardMonth{
+  display:none;
+  width:220px;
+}
+
+#dashboardMonth.visible{
+  display:block;
+}
+
 select,input{
   height:64px;
   border:1px solid #29315f;
@@ -1118,6 +1127,17 @@ input::placeholder{
     grid-column:1 / -1;
   }
 
+  #dashboardMonth{
+    display:none;
+    width:100%;
+    min-width:0;
+    grid-column:1 / -1;
+  }
+
+  #dashboardMonth.visible{
+    display:block;
+  }
+
   .department-toolbar{
     flex-wrap:wrap;
   }
@@ -1204,9 +1224,28 @@ input::placeholder{
     min-width:95px;
   }
 
-  .employee-grid,
-  .detail-grid{
+  .employee-grid{
     grid-template-columns:1fr;
+  }
+
+  /* Attendance summary stays as three equal tiles on mobile. */
+  .detail-grid{
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+    gap:8px;
+  }
+
+  .detail-stat{
+    padding:12px 9px;
+    min-width:0;
+  }
+
+  .detail-stat span{
+    font-size:10px;
+    white-space:nowrap;
+  }
+
+  .detail-stat b{
+    font-size:22px;
   }
 
   .detail-status{
@@ -1554,8 +1593,15 @@ input::placeholder{
     <select id="dashboardPeriod">
       <option value="today">Today</option>
       <option value="week">This week</option>
-      <option value="month">This month</option>
+      <option value="month">Select month</option>
     </select>
+
+    <input
+      id="dashboardMonth"
+      type="month"
+      aria-label="Select month"
+      style="display:none;"
+    >
 
     <select id="dashboardDepartment">
       <option value="all">All departments</option>
@@ -1683,74 +1729,42 @@ input::placeholder{
 
   </div>
 
-  <div class="detail-grid">
+  <div id="detailAttendancePeriodData">
 
-    <div class="detail-stat">
-      <span>ACTIVE DAYS</span>
-      <b id="detailActiveDays">0</b>
+    <div class="detail-grid">
+
+      <div class="detail-stat">
+        <span>PRESENT DAYS</span>
+        <b id="detailPresentDays">0</b>
+      </div>
+
+      <div class="detail-stat">
+        <span>WFH DAYS</span>
+        <b id="detailWfhDays">0</b>
+      </div>
+
+      <div class="detail-stat">
+        <span>LEAVE DAYS</span>
+        <b id="detailLeaveDays">0</b>
+      </div>
+
     </div>
 
-    <div class="detail-stat">
-      <span>PRESENT DAYS</span>
-      <b id="detailPresentDays">0</b>
+    <div class="label" style="margin-bottom:11px">
+      ATTENDANCE SUMMARY
     </div>
 
-    <div class="detail-stat">
-      <span>WFH DAYS</span>
-      <b id="detailWfhDays">0</b>
-    </div>
-
-    <div class="detail-stat">
-      <span>LEAVE DAYS</span>
-      <b id="detailLeaveDays">0</b>
-    </div>
-
-  </div>
-
-  <div class="label" style="margin-bottom:11px">
-    ATTENDANCE SUMMARY
-  </div>
-
-  <div class="activity-list" id="employeeAttendanceSummary">
-    <div class="activity-row">
-      <div>
-        <b>Total attendance days</b>
-        <small id="detailAttendanceDays">0 attendance days</small>
+    <div class="activity-list" id="employeeAttendanceSummary">
+      <div class="activity-row">
+        <div>
+          <b>Total attendance days</b>
+          <small id="detailAttendanceDays">0 attendance days</small>
+        </div>
       </div>
     </div>
-  </div>
-
-  <div class="label" style="margin-bottom:11px">
-    RECENT ACTIVITY
-  </div>
-
-  <div class="activity-list">
-
-    <div class="activity-row">
-      <div>
-        <b>Video work</b>
-        <small>9 CBSE Maths — Polynomials</small>
-      </div>
-      <b>09:42</b>
-    </div>
-
-    <div class="activity-row">
-      <div>
-        <b>Video work</b>
-        <small>9 CBSE Science — Chapter 3</small>
-      </div>
-      <b>10:15</b>
-    </div>
-
-    <div class="activity-row">
-      <div>
-        <b>Review</b>
-        <small>Content review completed</small>
-      </div>
-      <b>11:06</b>
-    </div>
 
   </div>
+
 
 </div>
 </section>
@@ -2103,12 +2117,19 @@ function openEmployeeDetail(employee, period){
   document.getElementById("detailRole").textContent=
     employee?.department || summary.department || "—";
 
+  const periodData=document.getElementById("detailAttendancePeriodData");
+
+  // The day-by-day attendance counters are only shown for a selected month.
+  // Today keeps only the employee's current status.
+  if(periodData){
+    periodData.style.display=period==="month" ? "" : "none";
+  }
+
   document.getElementById("detailCurrent").textContent=
     period==="today"
       ? String(employee?.status || "No attendance")
       : `${Number(employee?.days || summary.attendanceDays || 0)} attendance days`;
 
-  document.getElementById("detailActiveDays").textContent=Number(summary.activeDays || 0);
   document.getElementById("detailPresentDays").textContent=Number(summary.presentDays || 0);
   document.getElementById("detailWfhDays").textContent=Number(summary.wfhDays || 0);
   document.getElementById("detailLeaveDays").textContent=Number(summary.leaveDays || 0);
@@ -2135,12 +2156,30 @@ async function openEmployeeList(){
 
   const period=document.getElementById("dashboardPeriod")?.value || "today";
   const department=document.getElementById("dashboardDepartment")?.value || "all";
+  const month=document.getElementById("dashboardMonth")?.value || "";
   const search=(document.getElementById("dashboardSearch")?.value || "").trim().toLowerCase();
 
   try{
 
+    if(period==="month" && !month){
+      grid.innerHTML=`
+        <div class="report-empty">
+          Select a month to view attendance.
+        </div>
+      `;
+      return;
+    }
+
+    const params=new URLSearchParams();
+    params.set("period",period);
+    params.set("department",department);
+
+    if(period==="month"){
+      params.set("month",month);
+    }
+
     const response=await fetch(
-      `${ATTENDANCE_API}?period=${encodeURIComponent(period)}&department=${encodeURIComponent(department)}`
+      `${ATTENDANCE_API}?${params.toString()}`
     );
 
     if(!response.ok) throw new Error("HTTP "+response.status);
@@ -2762,15 +2801,20 @@ const REPORT_API="https://lernapp.xyz/webhook/learnyor/dashboard-report";
 let liveAttendance=[];
 let liveApiData=null;
 
-function apiParams(period,department){
+function apiParams(period,department,month=""){
   const params=new URLSearchParams();
   params.set("period",period);
   params.set("department",department || "all");
+
+  if(period==="month" && month){
+    params.set("month",month);
+  }
+
   return params.toString();
 }
 
-async function fetchAttendance(period="today",department="all"){
-  const url=ATTENDANCE_API+"?"+apiParams(period,department);
+async function fetchAttendance(period="today",department="all",month=""){
+  const url=ATTENDANCE_API+"?"+apiParams(period,department,month);
 
   try{
     const response=await fetch(url,{method:"GET",headers:{"Accept":"application/json"}});
@@ -2876,8 +2920,13 @@ async function loadDashboard(){
   const period=document.getElementById("dashboardPeriod").value;
   const department=document.getElementById("dashboardDepartment").value;
   const search=document.getElementById("dashboardSearch").value;
+  const month=document.getElementById("dashboardMonth")?.value || "";
 
-  const data=await fetchAttendance(period,department);
+  if(period==="month" && !month){
+    return;
+  }
+
+  const data=await fetchAttendance(period,department,month);
 
   updateEmployeeCard(data,period,search,null);
 
@@ -3045,14 +3094,42 @@ async function loadFullReport(){
   }
 }
 
+function updateDashboardPeriodControls(){
+  const period=document.getElementById("dashboardPeriod");
+  const month=document.getElementById("dashboardMonth");
+
+  if(!period || !month) return;
+
+  const isMonth=period.value==="month";
+
+  month.classList.toggle("visible",isMonth);
+  month.style.display=isMonth ? "block" : "none";
+
+  // The month remains empty until the user selects one.
+}
+
 function setupLiveAttendance(){
   const period=document.getElementById("dashboardPeriod");
+  const month=document.getElementById("dashboardMonth");
   const department=document.getElementById("dashboardDepartment");
   const search=document.getElementById("dashboardSearch");
 
-  if(!period || !department || !search) return;
+  if(!period || !month || !department || !search) return;
 
-  period.addEventListener("change", loadDashboard);
+  month.value="";
+  updateDashboardPeriodControls();
+
+  period.addEventListener("change", ()=>{
+    updateDashboardPeriodControls();
+
+    if(period.value==="month"){
+      return;
+    }
+
+    loadDashboard();
+  });
+
+  month.addEventListener("change", loadDashboard);
   department.addEventListener("change", loadDashboard);
   search.addEventListener("input", ()=>{
     if(liveApiData){
