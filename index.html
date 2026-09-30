@@ -2157,8 +2157,17 @@ function openEmployeeDetail(employee, period){
   document.getElementById("detailPresentDays").textContent=Number(summary.presentDays || 0);
   document.getElementById("detailWfhDays").textContent=Number(summary.wfhDays || 0);
   document.getElementById("detailLeaveDays").textContent=Number(summary.leaveDays || 0);
-  document.getElementById("detailAttendanceDays").textContent=
-    `${Number(summary.attendanceDays || 0)} attendance days`;
+  const detailPresentDays =
+      Number(employee?.presentDays || 0);
+
+    const detailWfhDays =
+      Number(employee?.wfhDays || 0);
+
+    const detailTotalAttendance =
+      detailPresentDays + detailWfhDays;
+
+    document.getElementById("detailAttendanceDays").textContent=
+      `${detailTotalAttendance} attendance days`;
 
   showScreen("detailScreen");
 }
