@@ -1995,7 +1995,7 @@ input::placeholder{
      SCHEDULE MANAGER
 ===================================================== -->
 <section id="scheduleManagerScreen" class="screen">
-  <button class="page-back" onclick="goBack()" aria-label="Back">←</button>
+  <button class="page-back" onclick="goHomeFromScheduleManager()" aria-label="Back to home">←</button>
   <section class="hero">
     <h1>Schedule Manager</h1>
     <p>Assign tasks, share materials and monitor each employee's daily progress.</p>
@@ -2112,6 +2112,31 @@ function goBack(){
     showScreen("dashboardScreen", false);
   }
 }
+
+
+function goHomeFromScheduleManager() {
+  const dashboard = document.getElementById("dashboardScreen");
+
+  if (!dashboard) {
+    console.error("Could not find dashboardScreen.");
+    return;
+  }
+
+  document.querySelectorAll(".screen").forEach(screen => {
+    screen.classList.remove("active");
+  });
+
+  dashboard.classList.add("active");
+
+  history.replaceState(
+    { screen: "dashboardScreen" },
+    "",
+    "#dashboardScreen"
+  );
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
 
 // Browser / Android / iPhone Back button
 window.addEventListener("popstate",()=>{
