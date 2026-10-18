@@ -1069,6 +1069,26 @@ input::placeholder{
   }
 }
 
+
+/* ================= SCHEDULE MANAGER ================= */
+.schedule-toolbar{display:grid;grid-template-columns:minmax(220px,1.5fr) minmax(170px,.8fr) auto;gap:12px;margin-bottom:18px;align-items:center}
+.schedule-toolbar input,.schedule-toolbar select,.schedule-form input,.schedule-form select,.schedule-form textarea{width:100%;min-width:0;height:52px;border:1px solid #29315f;border-radius:14px;background:#0c1330;color:#fff;padding:0 15px;font-size:15px}
+.schedule-form textarea{height:auto;padding:13px 15px;resize:vertical}
+.schedule-primary,.schedule-secondary,.schedule-small-btn{border:1px solid #435dff;border-radius:13px;background:linear-gradient(135deg,#684cff,#405dff);color:#fff;padding:13px 18px;cursor:pointer;font-weight:700}
+.schedule-secondary,.schedule-small-btn{background:#111a3c;border-color:#35416e}
+.schedule-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}
+.schedule-stat{border:1px solid #29315f;border-radius:16px;padding:15px;background:#111a3b}
+.schedule-stat b{display:block;font-size:26px;margin-bottom:3px}.schedule-stat span{font-size:13px;color:#b7c2e8}
+.schedule-employee-list,.schedule-task-list{display:grid;gap:13px}
+.schedule-employee-card{border:1px solid #27305d;border-radius:18px;background:linear-gradient(135deg,#101737,#11183b);padding:18px 20px}
+.schedule-employee-top{display:flex;align-items:center;gap:13px}
+.schedule-avatar{width:48px;height:48px;flex:0 0 auto;border-radius:15px;display:grid;place-items:center;background:linear-gradient(135deg,#7652ff,#405dff);font-size:20px;font-weight:800}
+.schedule-employee-meta{flex:1;min-width:0}.schedule-employee-meta strong{display:block;font-size:18px}.schedule-employee-meta small{color:#b7c2e8;display:block;margin-top:4px}
+.schedule-badges{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px}.schedule-pill{display:inline-flex;align-items:center;border-radius:20px;padding:5px 10px;font-size:12px;font-weight:700;background:#25305c;color:#dbe3ff}.schedule-pill.pending{background:#4b3a12;color:#ffd34d}.schedule-pill.in-progress{background:#0b3566;color:#65baff}.schedule-pill.completed{background:#064c38;color:#4ff0b1}.schedule-pill.cancelled{background:#541d2b;color:#ff929f}
+.schedule-employee-actions{display:flex;gap:8px;margin-top:13px;justify-content:flex-end}.schedule-task{border:1px solid #27305d;border-radius:16px;background:#111a3b;padding:17px}.schedule-task-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.schedule-task h3{font-size:16px;margin:0 0 7px}.schedule-task p{font-size:13px;color:#b7c2e8;margin:0 0 10px;white-space:pre-wrap}.schedule-task-meta{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:#aebbe4;margin:10px 0}.schedule-drive{color:#67caff;text-decoration:none;font-weight:700}.schedule-task-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}.schedule-wide{width:100%;margin-top:18px}.schedule-detail-head{display:flex;align-items:center;gap:15px}.schedule-detail-head h1{font-size:28px;margin:0}.schedule-detail-head p{color:#b7c2e8;margin:5px 0 0}.schedule-form{max-width:760px;border:1px solid #27305d;border-radius:22px;padding:24px;background:linear-gradient(135deg,#101737,#11183b);display:grid;gap:10px}.schedule-form label{font-size:14px;color:#cbd4f5;margin-top:4px}.schedule-form input[type=date],.schedule-form input[type=time]{color-scheme:dark}.schedule-form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}.schedule-form-row>div{min-width:0}.schedule-check{display:flex;align-items:center;gap:10px!important;margin:10px 0}.schedule-check input{width:18px;height:18px;flex:0 0 auto}.schedule-form-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}.schedule-help,.schedule-empty{color:#aebbe4;font-size:13px;line-height:1.5}.schedule-empty{border:1px dashed #35416e;border-radius:16px;padding:25px;text-align:center}.schedule-status-select{width:auto!important;height:38px!important;padding:0 9px!important;font-size:12px!important}.schedule-danger{border-color:#793449!important;color:#ff9aaa!important}.schedule-muted{color:#9ca9d7;font-size:12px}
+@media(max-width:800px){.schedule-toolbar{grid-template-columns:1fr 1fr}.schedule-toolbar input{grid-column:1/-1}.schedule-toolbar .schedule-primary{grid-column:1/-1;width:100%}.schedule-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.schedule-employee-card{padding:15px}.schedule-employee-top{align-items:flex-start}.schedule-employee-actions{justify-content:flex-start}.schedule-form{padding:18px}}
+@media(max-width:480px){.schedule-form-row{grid-template-columns:1fr}.schedule-task-top{flex-direction:column}.schedule-summary{gap:8px}.schedule-stat{padding:12px}.schedule-stat b{font-size:22px}}
+
 /* ================= PLACEHOLDER ================= */
 
 .placeholder{
@@ -1690,9 +1710,9 @@ input::placeholder{
       <span>Open individual activity</span>
     </button>
 
-    <button class="action" onclick="showScreen('departmentScreen')">
-      <strong>🏢 Department Report</strong>
-      <span>Compare work by department</span>
+    <button class="action" onclick="openScheduleManager()">
+      <strong>🗓️ Schedule Manager</strong>
+      <span>Assign tasks, share Drive materials and monitor daily progress</span>
     </button>
 
     <button class="action" onclick="showScreen('settingsScreen')">
@@ -1970,6 +1990,61 @@ input::placeholder{
 
 </section>
 
+
+<!-- =====================================================
+     SCHEDULE MANAGER
+===================================================== -->
+<section id="scheduleManagerScreen" class="screen">
+  <button class="page-back" onclick="goBack()" aria-label="Back">←</button>
+  <section class="hero">
+    <h1>Schedule Manager</h1>
+    <p>Assign tasks, share materials and monitor each employee's daily progress.</p>
+  </section>
+  <div class="schedule-toolbar">
+    <input id="scheduleSearch" type="search" placeholder="Search employee or task..." aria-label="Search employee or task">
+    <select id="scheduleStatusFilter" aria-label="Filter schedules by status">
+      <option value="all">All statuses</option><option>Pending</option><option>In Progress</option><option>Completed</option><option>Cancelled</option>
+    </select>
+    <button class="schedule-primary" onclick="openScheduleForm()">＋ Create new schedule</button>
+  </div>
+  <div class="schedule-summary" id="scheduleSummary"></div>
+  <div id="scheduleEmployeeList" class="schedule-employee-list"><div class="schedule-empty">Loading employees and schedules…</div></div>
+</section>
+
+<section id="scheduleEmployeeScreen" class="screen">
+  <button class="page-back" onclick="showScreen('scheduleManagerScreen')" aria-label="Back">←</button>
+  <div class="schedule-detail-head">
+    <div class="schedule-avatar" id="scheduleDetailAvatar">V</div>
+    <div><h1 id="scheduleDetailName">Employee</h1><p id="scheduleDetailDepartment">Department</p></div>
+  </div>
+  <div class="schedule-summary" id="scheduleDetailSummary"></div>
+  <div id="scheduleTaskList" class="schedule-task-list"></div>
+  <button class="schedule-primary schedule-wide" onclick="openScheduleForm(selectedScheduleEmployee)">＋ Add schedule for this employee</button>
+</section>
+
+<section id="scheduleFormScreen" class="screen">
+  <button class="page-back" onclick="showScreen('scheduleManagerScreen')" aria-label="Back">←</button>
+  <section class="hero"><h1 id="scheduleFormHeading">Create new schedule</h1><p>Assign a task and attach its Google Drive materials.</p></section>
+  <form id="scheduleForm" class="schedule-form">
+    <label for="scheduleEmployeeSelect">Select employee</label>
+    <select id="scheduleEmployeeSelect" required><option value="">Loading employees…</option></select>
+    <label for="scheduleTitle">Task title *</label>
+    <input id="scheduleTitle" required maxlength="160" placeholder="Enter schedule name">
+    <label for="scheduleDescription">Description (optional)</label>
+    <textarea id="scheduleDescription" rows="3" placeholder="Instructions or expected output"></textarea>
+    <label for="scheduleDriveLink">Google Drive link *</label>
+    <input id="scheduleDriveLink" type="url" required placeholder="https://drive.google.com/...">
+    <div class="schedule-form-row">
+      <div><label for="scheduleDate">Scheduled date *</label><input id="scheduleDate" type="date" required></div>
+      <div><label for="scheduleDueTime">Due time (optional)</label><input id="scheduleDueTime" type="time"></div>
+    </div>
+    <label for="scheduleInitialStatus">Initial status</label>
+    <select id="scheduleInitialStatus"><option>Pending</option><option>In Progress</option></select>
+    <label class="schedule-check"><input id="scheduleSendNow" type="checkbox" checked> Send this schedule to the employee on Telegram</label>
+    <div class="schedule-form-actions"><button class="schedule-primary" type="submit">Save schedule</button><button class="schedule-secondary" type="button" onclick="showScreen('scheduleManagerScreen')">Cancel</button></div>
+    <p class="schedule-help">Telegram delivery and employee status buttons require the Schedule Manager n8n webhook to be configured.</p>
+  </form>
+</section>
 
 <!-- =====================================================
      SETTINGS PLACEHOLDER
@@ -3197,6 +3272,225 @@ function setupReportControls(){
   updateReportControls();
 }
 
+
+/* =====================================================
+   SCHEDULE MANAGER
+   Front-end schedule store. Set SCHEDULE_WEBHOOK_URL to the
+   n8n production webhook to persist schedules and notify Telegram.
+===================================================== */
+const SCHEDULE_WEBHOOK_URL = "https://lernapp.xyz/webhook/learnyor/schedule-manager";
+const SCHEDULE_STORAGE_KEY = "learnyor_schedule_manager_v1";
+let scheduleEmployees = [];
+let scheduleItems = [];
+let selectedScheduleEmployee = "";
+let editingScheduleId = null;
+
+function localISODate(date=new Date()){
+  const y=date.getFullYear(),m=String(date.getMonth()+1).padStart(2,"0"),d=String(date.getDate()).padStart(2,"0");
+  return `${y}-${m}-${d}`;
+}
+function scheduleStatusClass(status){return String(status||"Pending").toLowerCase().replace(/\s+/g,"-");}
+function readSchedules(){
+  try{const value=JSON.parse(localStorage.getItem(SCHEDULE_STORAGE_KEY)||"[]");return Array.isArray(value)?value:[];}
+  catch{return [];}
+}
+function saveSchedules(){localStorage.setItem(SCHEDULE_STORAGE_KEY,JSON.stringify(scheduleItems));}
+function scheduleId(){return "sch_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,8);}
+function getScheduleEmployee(name){return scheduleEmployees.find(e=>String(e.name||"").trim().toLowerCase()===String(name||"").trim().toLowerCase())||{name,department:""};}
+async function loadScheduleEmployees(){
+  // IMPORTANT: Read the master roster from the Employees sheet through n8n.
+  // Do not use ATTENDANCE_API here: employees who have not checked in today
+  // must still be available for schedule assignment.
+  try{
+    const response=await fetch(SCHEDULE_WEBHOOK_URL,{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Accept":"application/json"},
+      body:JSON.stringify({action:"get_employees",source:"schedule-manager"})
+    });
+    if(!response.ok) throw new Error("Employees sheet API returned HTTP "+response.status);
+    const data=await response.json();
+    const rows=Array.isArray(data?.employees)?data.employees:
+      Array.isArray(data?.data)?data.data:
+      Array.isArray(data?.rows)?data.rows:[];
+    scheduleEmployees=rows
+      .map(e=>({
+        name:String(e?.name??e?.Employee??e?.employee??"").trim(),
+        department:String(e?.department??e?.Department??"").trim(),
+        telegramId:String(e?.telegramId??e?.TelegramID??e?.telegram_id??"").trim()
+      }))
+      .filter(e=>e.name);
+    const unique=new Map();
+    scheduleEmployees.forEach(e=>unique.set(e.name.toLowerCase(),e));
+    scheduleEmployees=[...unique.values()].sort((a,b)=>a.name.localeCompare(b.name));
+    if(!scheduleEmployees.length) throw new Error("The Employees sheet endpoint returned no employee rows.");
+  }catch(error){
+    console.warn("Could not load employees from the Employees sheet via the schedule webhook",error);
+    scheduleEmployees=[];
+  }
+  renderScheduleEmployeeOptions();
+  renderScheduleManager();
+}
+function renderScheduleEmployeeOptions(selected=""){
+  const select=document.getElementById("scheduleEmployeeSelect");if(!select)return;
+  const prior=selected||select.value;
+  if(!scheduleEmployees.length){select.innerHTML='<option value="">Employee list unavailable — check attendance API</option>';return;}
+  select.innerHTML='<option value="">Select employee</option>'+scheduleEmployees.map(e=>`<option value="${escapeHtml(e.name)}">${escapeHtml(e.name)}${e.department?' ('+escapeHtml(e.department)+')':''}</option>`).join("");
+  if(prior)select.value=prior;
+}
+function normalizeScheduleDates(){
+  // Create a new daily copy of any still-open task that was due before today.
+  // Each generated copy can be deleted independently by an assigned admin.
+  const today=localISODate();
+  const existing=new Set(scheduleItems.map(x=>String(x.carryKey||"" )).filter(Boolean));
+  const carry=[];
+  scheduleItems.forEach(item=>{
+    if(!item.deleted && item.date<today && ["Pending","In Progress"].includes(item.status)){
+      const key=item.id+"|"+today;
+      if(!existing.has(key)) carry.push({...item,id:scheduleId(),date:today,createdAt:Date.now(),carryKey:key,carriedFrom:item.date,isAutomatedCarry:true,status:item.status,telegramSent:false});
+    }
+  });
+  if(carry.length){scheduleItems.push(...carry);saveSchedules();}
+}
+function scheduleFilteredItems(){
+  const q=(document.getElementById("scheduleSearch")?.value||"").trim().toLowerCase();
+  const status=document.getElementById("scheduleStatusFilter")?.value||"all";
+  return scheduleItems.filter(x=>!x.deleted&&(!q||[x.employee,x.title,x.description,x.department].some(v=>String(v||"").toLowerCase().includes(q)))&&(status==="all"||x.status===status));
+}
+function renderScheduleManager(){
+  normalizeScheduleDates();
+  const items=scheduleFilteredItems();
+  const counts={Pending:0,"In Progress":0,Completed:0,Cancelled:0};
+  scheduleItems.filter(x=>!x.deleted&&x.date===localISODate()).forEach(x=>counts[x.status]=(counts[x.status]||0)+1);
+  const summary=document.getElementById("scheduleSummary");
+  if(summary)summary.innerHTML=[['Today',scheduleItems.filter(x=>!x.deleted&&x.date===localISODate()).length],['Pending',counts.Pending],['In Progress',counts['In Progress']],['Completed',counts.Completed]].map(([label,n])=>`<div class="schedule-stat"><b>${n}</b><span>${label}</span></div>`).join("");
+  const byEmployee=new Map();
+  // Start with the complete master employee roster, not only people who have
+  // attendance or a schedule entry. This keeps every employee assignable.
+  scheduleEmployees.forEach(emp=>byEmployee.set(emp.name,[]));
+  items.forEach(item=>{
+    const key=item.employee||"Unassigned";
+    if(!byEmployee.has(key))byEmployee.set(key,[]);
+    byEmployee.get(key).push(item);
+  });
+  const root=document.getElementById("scheduleEmployeeList");if(!root)return;
+  if(!scheduleEmployees.length){root.innerHTML='<div class="schedule-empty">Employee list could not be loaded from the Employees sheet. Check the n8n schedule-manager webhook action <b>get_employees</b>.</div>';return;}
+  const visibleEntries=[...byEmployee.entries()].filter(([name,list])=>{
+    const q=(document.getElementById("scheduleSearch")?.value||"").trim().toLowerCase();
+    const status=document.getElementById("scheduleStatusFilter")?.value||"all";
+    const emp=getScheduleEmployee(name);
+    const matchesSearch=!q||[name,emp.department,...list.map(x=>x.title),...list.map(x=>x.description)].some(v=>String(v||"").toLowerCase().includes(q));
+    const matchesStatus=status==="all" ? true : list.some(x=>x.status===status);
+    return matchesSearch&&matchesStatus;
+  });
+  if(!visibleEntries.length){root.innerHTML='<div class="schedule-empty">No employees or schedules match this filter.</div>';return;}
+  root.innerHTML=visibleEntries.sort((a,b)=>a[0].localeCompare(b[0])).map(([name,list])=>{
+    const emp=getScheduleEmployee(name);const countStatus=s=>list.filter(x=>x.status===s).length;
+    const latest=[...list].sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,3);
+    const dominant=countStatus('In Progress')?'In Progress':countStatus('Pending')?'Pending':countStatus('Completed')?'Completed':countStatus('Cancelled')?'Cancelled':'No tasks';
+    return `<article class="schedule-employee-card"><div class="schedule-employee-top"><div class="schedule-avatar">${escapeHtml(getEmployeeInitials(name))}</div><div class="schedule-employee-meta"><strong>${escapeHtml(name)}</strong><small>${escapeHtml(emp.department||list[0]?.department||'Employee')}</small></div><span class="schedule-pill ${dominant==='No tasks'?'pending':scheduleStatusClass(dominant)}">${escapeHtml(dominant)}</span></div><div class="schedule-badges"><span class="schedule-pill pending">${countStatus('Pending')} Pending</span><span class="schedule-pill in-progress">${countStatus('In Progress')} In Progress</span><span class="schedule-pill completed">${countStatus('Completed')} Completed</span>${countStatus('Cancelled')?`<span class="schedule-pill cancelled">${countStatus('Cancelled')} Cancelled</span>`:''}</div><div class="schedule-muted" style="margin-top:12px">${latest.length?latest.map(x=>`${escapeHtml(x.title)} · ${escapeHtml(x.date)}${x.isAutomatedCarry?' · carried forward':''}`).join('<br>'):'No schedules assigned yet.'}</div><div class="schedule-employee-actions"><button class="schedule-small-btn" onclick="openScheduleEmployee('${escapeHtml(name).replace(/'/g,'&#039;')}')">View tasks</button><button class="schedule-small-btn" onclick="openScheduleForm('${escapeHtml(name).replace(/'/g,'&#039;')}')">Assign task</button></div></article>`;
+  }).join("");
+}
+function openScheduleManager(){
+  showScreen("scheduleManagerScreen");
+  renderScheduleManager();
+  if(!scheduleEmployees.length)loadScheduleEmployees();
+}
+function openScheduleEmployee(name){
+  selectedScheduleEmployee=name;
+  const emp=getScheduleEmployee(name);
+  document.getElementById("scheduleDetailName").textContent=name;
+  document.getElementById("scheduleDetailAvatar").textContent=getEmployeeInitials(name);
+  document.getElementById("scheduleDetailDepartment").textContent=emp.department||"Employee";
+  showScreen("scheduleEmployeeScreen");
+  renderScheduleEmployeeDetail();
+}
+function renderScheduleEmployeeDetail(){
+  const items=scheduleItems.filter(x=>!x.deleted&&x.employee===selectedScheduleEmployee).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  const statuses=["Pending","In Progress","Completed","Cancelled"];
+  document.getElementById("scheduleDetailSummary").innerHTML=[['Total tasks',items.length],...statuses.map(s=>[s,items.filter(x=>x.status===s).length])].map(([label,n])=>`<div class="schedule-stat"><b>${n}</b><span>${escapeHtml(label)}</span></div>`).join("");
+  const root=document.getElementById("scheduleTaskList");
+  if(!items.length){root.innerHTML='<div class="schedule-empty">No schedules assigned to this employee yet.</div>';return;}
+  root.innerHTML=items.map(item=>`<article class="schedule-task"><div class="schedule-task-top"><div><h3>${escapeHtml(item.title)}</h3>${item.description?`<p>${escapeHtml(item.description)}</p>`:''}<span class="schedule-pill ${scheduleStatusClass(item.status)}">${escapeHtml(item.status)}</span></div><select class="schedule-status-select" aria-label="Change status" onchange="changeScheduleStatus('${item.id}',this.value)">${statuses.map(s=>`<option ${s===item.status?'selected':''}>${s}</option>`).join('')}</select></div><div class="schedule-task-meta"><span>📅 ${escapeHtml(item.date||'—')}</span>${item.dueTime?`<span>◷ ${escapeHtml(item.dueTime)}</span>`:''}${item.isAutomatedCarry?`<span>↻ Carried from ${escapeHtml(item.carriedFrom||'previous day')}</span>`:''}</div><a class="schedule-drive" href="${safeHttpUrl(item.driveLink)}" target="_blank" rel="noopener noreferrer">↗ Open Google Drive materials</a><div class="schedule-task-actions"><button class="schedule-small-btn" onclick="editSchedule('${item.id}')">Edit</button><button class="schedule-small-btn schedule-danger" onclick="deleteSchedule('${item.id}')">Delete entry</button></div></article>`).join("");
+}
+function openScheduleForm(employee=""){
+  editingScheduleId=null;
+  document.getElementById("scheduleForm").reset();
+  document.getElementById("scheduleFormHeading").textContent="Create new schedule";
+  document.getElementById("scheduleDate").value=localISODate();
+  document.getElementById("scheduleInitialStatus").value="Pending";
+  document.getElementById("scheduleSendNow").checked=true;
+  renderScheduleEmployeeOptions(employee||selectedScheduleEmployee||"");
+  showScreen("scheduleFormScreen");
+  if(!scheduleEmployees.length)loadScheduleEmployees().then(()=>renderScheduleEmployeeOptions(employee));
+}
+function editSchedule(id){
+  const item=scheduleItems.find(x=>x.id===id);if(!item)return;
+  editingScheduleId=id;
+  document.getElementById("scheduleForm").reset();
+  document.getElementById("scheduleFormHeading").textContent="Edit schedule";
+  renderScheduleEmployeeOptions(item.employee);
+  document.getElementById("scheduleTitle").value=item.title||"";
+  document.getElementById("scheduleDescription").value=item.description||"";
+  document.getElementById("scheduleDriveLink").value=item.driveLink||"";
+  document.getElementById("scheduleDate").value=item.date||localISODate();
+  document.getElementById("scheduleDueTime").value=item.dueTime||"";
+  document.getElementById("scheduleInitialStatus").value=item.status||"Pending";
+  document.getElementById("scheduleSendNow").checked=false;
+  showScreen("scheduleFormScreen");
+}
+function safeHttpUrl(value){try{const u=new URL(String(value||""));return ['http:','https:'].includes(u.protocol)?u.href:'#';}catch{return '#';}}
+async function notifyScheduleWebhook(action,payload){
+  if(!SCHEDULE_WEBHOOK_URL)return {ok:false,reason:"Schedule webhook is not configured."};
+  try{
+    const response=await fetch(SCHEDULE_WEBHOOK_URL,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({action,...payload})});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok||data.success===false)throw new Error(data.message||`Webhook HTTP ${response.status}`);
+    return {ok:true,data};
+  }catch(error){console.warn("Schedule webhook request failed",error);return {ok:false,reason:error.message};}
+}
+document.getElementById("scheduleForm")?.addEventListener("submit",async event=>{
+  event.preventDefault();
+  const employee=document.getElementById("scheduleEmployeeSelect").value;
+  const title=document.getElementById("scheduleTitle").value.trim();
+  const driveLink=document.getElementById("scheduleDriveLink").value.trim();
+  if(!employee||!title||!driveLink){alert("Please select an employee and enter the task title and Google Drive link.");return;}
+  const safeLink=safeHttpUrl(driveLink);
+  if(safeLink==="#"||!/^https?:\/\//i.test(driveLink)){alert("Please enter a valid Google Drive URL.");return;}
+  const emp=getScheduleEmployee(employee);
+  const old=editingScheduleId?scheduleItems.find(x=>x.id===editingScheduleId):null;
+  const item={...(old||{}),id:editingScheduleId||scheduleId(),employee,department:emp.department||"",title,description:document.getElementById("scheduleDescription").value.trim(),driveLink:safeLink,date:document.getElementById("scheduleDate").value,dueTime:document.getElementById("scheduleDueTime").value,status:document.getElementById("scheduleInitialStatus").value,createdAt:old?.createdAt||Date.now(),updatedAt:Date.now(),deleted:false};
+  if(editingScheduleId){scheduleItems=scheduleItems.map(x=>x.id===editingScheduleId?item:x);}else{scheduleItems.push(item);}
+  saveSchedules();
+  const send=document.getElementById("scheduleSendNow").checked;
+  if(send){
+    const result=await notifyScheduleWebhook(editingScheduleId?"update_schedule":"create_schedule",{schedule:item,notifyEmployee:true,source:"admin-dashboard"});
+    if(!result.ok)alert("Schedule saved in this browser, but Telegram delivery was not confirmed. The n8n schedule webhook is not ready or returned an error: "+result.reason);
+    else item.telegramSent=true;
+  }else{
+    // Save-only schedules are sent to the server for durable storage when the webhook exists.
+    const result=await notifyScheduleWebhook(editingScheduleId?"update_schedule":"create_schedule",{schedule:item,notifyEmployee:false,source:"admin-dashboard"});
+    if(!result.ok)console.info("Schedule remains saved locally; server sync is not configured.");
+  }
+  saveSchedules();
+  selectedScheduleEmployee=employee;
+  renderScheduleManager();
+  if(selectedScheduleEmployee)openScheduleEmployee(selectedScheduleEmployee);else showScreen("scheduleManagerScreen");
+});
+async function changeScheduleStatus(id,status){
+  const item=scheduleItems.find(x=>x.id===id);if(!item)return;
+  const previous=item.status;item.status=status;item.updatedAt=Date.now();saveSchedules();renderScheduleEmployeeDetail();renderScheduleManager();
+  const result=await notifyScheduleWebhook("update_status",{scheduleId:id,status,employee:item.employee,source:"admin-dashboard"});
+  if(!result.ok)console.info("Status updated locally; employee Telegram status sync needs the n8n webhook.",result.reason);
+}
+async function deleteSchedule(id){
+  const item=scheduleItems.find(x=>x.id===id);if(!item)return;
+  if(!confirm(`Delete this schedule entry for ${item.employee}? This will not delete its Google Drive files.`))return;
+  item.deleted=true;item.deletedAt=Date.now();saveSchedules();
+  const result=await notifyScheduleWebhook("delete_schedule",{scheduleId:id,employee:item.employee,source:"admin-dashboard"});
+  if(!result.ok)console.info("Deleted locally; server/Telegram deletion sync requires the n8n webhook.",result.reason);
+  renderScheduleEmployeeDetail();renderScheduleManager();
+}
+
 /* =====================================================
    INITIAL LOAD
 ===================================================== */
@@ -3208,6 +3502,14 @@ if(!history.state?.screen){
 renderDepartments();
 setupReportControls();
 setupLiveAttendance();
+
+// Schedule Manager filters and initial employee roster.
+document.getElementById("scheduleSearch")?.addEventListener("input",renderScheduleManager);
+document.getElementById("scheduleStatusFilter")?.addEventListener("change",renderScheduleManager);
+scheduleItems=readSchedules();
+normalizeScheduleDates();
+loadScheduleEmployees().then(renderScheduleManager);
+
 
 
 /* =====================================================
