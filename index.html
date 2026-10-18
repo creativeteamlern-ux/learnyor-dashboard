@@ -3356,40 +3356,195 @@ function scheduleFilteredItems(){
   const status=document.getElementById("scheduleStatusFilter")?.value||"all";
   return scheduleItems.filter(x=>!x.deleted&&(!q||[x.employee,x.title,x.description,x.department].some(v=>String(v||"").toLowerCase().includes(q)))&&(status==="all"||x.status===status));
 }
-function renderScheduleManager(){
-  normalizeScheduleDates();
-  const items=scheduleFilteredItems();
-  const counts={Pending:0,"In Progress":0,Completed:0,Cancelled:0};
-  scheduleItems.filter(x=>!x.deleted&&x.date===localISODate()).forEach(x=>counts[x.status]=(counts[x.status]||0)+1);
-  const summary=document.getElementById("scheduleSummary");
-  if(summary)summary.innerHTML=[['Today',scheduleItems.filter(x=>!x.deleted&&x.date===localISODate()).length],['Pending',counts.Pending],['In Progress',counts['In Progress']],['Completed',counts.Completed]].map(([label,n])=>`<div class="schedule-stat"><b>${n}</b><span>${label}</span></div>`).join("");
-  const byEmployee=new Map();
-  // Start with the complete master employee roster, not only people who have
-  // attendance or a schedule entry. This keeps every employee assignable.
-  scheduleEmployees.forEach(emp=>byEmployee.set(emp.name,[]));
-  items.forEach(item=>{
-    const key=item.employee||"Unassigned";
-    if(!byEmployee.has(key))byEmployee.set(key,[]);
-    byEmployee.get(key).push(item);
+
+function renderScheduleManager() {
+  const root = document.getElementById("scheduleEmployeeList");
+  if (!root) return;
+
+  const searchInput = document.getElementById("scheduleSearch");
+  const statusSelect = document.getElementById("scheduleStatusFilter");
+
+  const query = (searchInput?.value || "").trim().toLowerCase();
+  const status = statusSelect?.value || "all";
+
+  // Only show employees who have at least one non-deleted schedule.
+  // Keep the complete scheduleEmployees list unchanged so the
+  // Create Schedule employee dropdown continues to show everyone.
+  const visibleSchedules = scheduleItems.filter(item => {
+    if (item.deleted) return false;
+
+    const matchesStatus =
+      status === "all" || item.status === status;
+
+    const matchesSearch =
+      !query ||
+      [
+        item.employee,
+        item.title,
+        item.description,
+        item.department
+      ].some(value =>
+        String(value || "").toLowerCase().includes(query)
+      );
+
+    return matchesStatus && matchesSearch;
   });
-  const root=document.getElementById("scheduleEmployeeList");if(!root)return;
-  if(!scheduleEmployees.length){root.innerHTML='<div class="schedule-empty">Employee list could not be loaded from the Employees sheet. Check the n8n schedule-manager webhook action <b>get_employees</b>.</div>';return;}
-  const visibleEntries=[...byEmployee.entries()].filter(([name,list])=>{
-    const q=(document.getElementById("scheduleSearch")?.value||"").trim().toLowerCase();
-    const status=document.getElementById("scheduleStatusFilter")?.value||"all";
-    const emp=getScheduleEmployee(name);
-    const matchesSearch=!q||[name,emp.department,...list.map(x=>x.title),...list.map(x=>x.description)].some(v=>String(v||"").toLowerCase().includes(q));
-    const matchesStatus=status==="all" ? true : list.some(x=>x.status===status);
-    return matchesSearch&&matchesStatus;
+
+  // Group matching schedules by employee.
+  const grouped = new Map();
+
+  visibleSchedules.forEach(item => {
+    const name = String(item.employee || "").trim();
+    if (!name) return;
+
+    const key = name.toLowerCase();
+
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        name,
+        tasks: []
+      });
+    }
+
+    grouped.get(key).tasks.push(item);
   });
-  if(!visibleEntries.length){root.innerHTML='<div class="schedule-empty">No employees or schedules match this filter.</div>';return;}
-  root.innerHTML=visibleEntries.sort((a,b)=>a[0].localeCompare(b[0])).map(([name,list])=>{
-    const emp=getScheduleEmployee(name);const countStatus=s=>list.filter(x=>x.status===s).length;
-    const latest=[...list].sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,3);
-    const dominant=countStatus('In Progress')?'In Progress':countStatus('Pending')?'Pending':countStatus('Completed')?'Completed':countStatus('Cancelled')?'Cancelled':'No tasks';
-    return `<article class="schedule-employee-card"><div class="schedule-employee-top"><div class="schedule-avatar">${escapeHtml(getEmployeeInitials(name))}</div><div class="schedule-employee-meta"><strong>${escapeHtml(name)}</strong><small>${escapeHtml(emp.department||list[0]?.department||'Employee')}</small></div><span class="schedule-pill ${dominant==='No tasks'?'pending':scheduleStatusClass(dominant)}">${escapeHtml(dominant)}</span></div><div class="schedule-badges"><span class="schedule-pill pending">${countStatus('Pending')} Pending</span><span class="schedule-pill in-progress">${countStatus('In Progress')} In Progress</span><span class="schedule-pill completed">${countStatus('Completed')} Completed</span>${countStatus('Cancelled')?`<span class="schedule-pill cancelled">${countStatus('Cancelled')} Cancelled</span>`:''}</div><div class="schedule-muted" style="margin-top:12px">${latest.length?latest.map(x=>`${escapeHtml(x.title)} · ${escapeHtml(x.date)}${x.isAutomatedCarry?' · carried forward':''}`).join('<br>'):'No schedules assigned yet.'}</div><div class="schedule-employee-actions"><button class="schedule-small-btn" onclick="openScheduleEmployee('${escapeHtml(name).replace(/'/g,'&#039;')}')">View tasks</button><button class="schedule-small-btn" onclick="openScheduleForm('${escapeHtml(name).replace(/'/g,'&#039;')}')">Assign task</button></div></article>`;
+
+  const entries = [...grouped.values()].sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
+
+  // Update summary counts using the currently visible schedules.
+  const today = new Date().toISOString().slice(0, 10);
+
+  const todayCount = visibleSchedules.filter(
+    item => item.date === today
+  ).length;
+
+  const pendingCount = visibleSchedules.filter(
+    item => item.status === "Pending"
+  ).length;
+
+  const inProgressCount = visibleSchedules.filter(
+    item => item.status === "In Progress"
+  ).length;
+
+  const completedCount = visibleSchedules.filter(
+    item => item.status === "Completed"
+  ).length;
+
+  const todayElement = document.getElementById("scheduleTodayCount");
+  const pendingElement = document.getElementById("schedulePendingCount");
+  const progressElement = document.getElementById("scheduleProgressCount");
+  const completedElement = document.getElementById("scheduleCompletedCount");
+
+  if (todayElement) todayElement.textContent = todayCount;
+  if (pendingElement) pendingElement.textContent = pendingCount;
+  if (progressElement) progressElement.textContent = inProgressCount;
+  if (completedElement) completedElement.textContent = completedCount;
+
+  if (!entries.length) {
+    root.innerHTML = `
+      <div class="schedule-empty">
+        No employees have schedules matching the selected search or status.
+        Create a schedule to see an employee here.
+      </div>
+    `;
+    return;
+  }
+
+  root.innerHTML = entries.map(entry => {
+    const name = entry.name;
+    const tasks = entry.tasks;
+
+    const employee = getScheduleEmployee(name);
+
+    const countStatus = taskStatus =>
+      tasks.filter(task => task.status === taskStatus).length;
+
+    const latest = [...tasks]
+      .sort((a, b) =>
+        String(b.date || "").localeCompare(String(a.date || ""))
+      )
+      .slice(0, 3);
+
+    const dominantStatus =
+      countStatus("In Progress") > 0
+        ? "In Progress"
+        : countStatus("Pending") > 0
+          ? "Pending"
+          : countStatus("Completed") > 0
+            ? "Completed"
+            : "Cancelled";
+
+    const safeName = escapeHtml(name).replace(/'/g, "&#039;");
+
+    return `
+      <article class="schedule-employee-card">
+        <div class="schedule-employee-top">
+          <div class="schedule-avatar">
+            ${escapeHtml(getEmployeeInitials(name))}
+          </div>
+
+          <div class="schedule-employee-meta">
+            <strong>${escapeHtml(name)}</strong>
+            <small>
+              ${escapeHtml(employee.department || tasks[0]?.department || "Employee")}
+            </small>
+          </div>
+
+          <span class="schedule-pill ${scheduleStatusClass(dominantStatus)}">
+            ${escapeHtml(dominantStatus)}
+          </span>
+        </div>
+
+        <div class="schedule-badges">
+          <span class="schedule-pill pending">
+            ${countStatus("Pending")} Pending
+          </span>
+
+          <span class="schedule-pill in-progress">
+            ${countStatus("In Progress")} In Progress
+          </span>
+
+          <span class="schedule-pill completed">
+            ${countStatus("Completed")} Completed
+          </span>
+
+          ${
+            countStatus("Cancelled")
+              ? `<span class="schedule-pill cancelled">
+                  ${countStatus("Cancelled")} Cancelled
+                </span>`
+              : ""
+          }
+        </div>
+
+        <div class="schedule-muted" style="margin-top:12px">
+          ${latest.map(task =>
+            `${escapeHtml(task.title || "Untitled task")} · ${escapeHtml(task.date || "")}`
+          ).join("<br>")}
+        </div>
+
+        <div class="schedule-employee-actions">
+          <button
+            class="schedule-small-btn"
+            onclick="openScheduleEmployee('${safeName}')"
+          >
+            View tasks
+          </button>
+
+          <button
+            class="schedule-small-btn"
+            onclick="openScheduleForm('${safeName}')"
+          >
+            Assign task
+          </button>
+        </div>
+      </article>
+    `;
   }).join("");
 }
+
 function openScheduleManager(){
   showScreen("scheduleManagerScreen");
   renderScheduleManager();
