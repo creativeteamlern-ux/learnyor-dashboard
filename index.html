@@ -3663,6 +3663,12 @@ function editSchedule(id){
   document.getElementById("scheduleForm").reset();
   document.getElementById("scheduleFormHeading").textContent="Edit schedule";
   renderScheduleEmployeeOptions(item.employee);
+  const employeeSelect = document.getElementById("scheduleEmployeeSelect");
+
+if (employeeSelect) {
+  employeeSelect.value = item.employee;
+  employeeSelect.disabled = true;
+}
   document.getElementById("scheduleEmployeeSelect").disabled = false;
   document.getElementById("scheduleTitle").value=item.title||"";
   document.getElementById("scheduleDescription").value=item.description||"";
