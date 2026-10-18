@@ -2019,7 +2019,7 @@ input::placeholder{
   </div>
   <div class="schedule-summary" id="scheduleDetailSummary"></div>
   <div id="scheduleTaskList" class="schedule-task-list"></div>
-  <button class="schedule-primary schedule-wide" onclick="openScheduleForm(selectedScheduleEmployee)">＋ Add schedule for this employee</button>
+  <button class="schedule-primary schedule-wide" onclick="openScheduleForm(selectedScheduleEmployee, true)">＋ Add schedule for this employee</button>
 </section>
 
 <section id="scheduleFormScreen" class="screen">
@@ -3306,6 +3306,7 @@ function setupReportControls(){
 const SCHEDULE_WEBHOOK_URL = "https://lernapp.xyz/webhook/learnyor/schedule-manager";
 const SCHEDULE_STORAGE_KEY = "learnyor_schedule_manager_v1";
 let scheduleEmployees = [];
+let scheduleFormEmployeeLocked = false;
 let scheduleItems = [];
 let selectedScheduleEmployee = "";
 let editingScheduleId = null;
@@ -3355,13 +3356,34 @@ async function loadScheduleEmployees(){
   renderScheduleEmployeeOptions();
   renderScheduleManager();
 }
-function renderScheduleEmployeeOptions(selected=""){
-  const select=document.getElementById("scheduleEmployeeSelect");if(!select)return;
-  const prior=selected||select.value;
-  if(!scheduleEmployees.length){select.innerHTML='<option value="">Employee list unavailable — check attendance API</option>';return;}
-  select.innerHTML='<option value="">Select employee</option>'+scheduleEmployees.map(e=>`<option value="${escapeHtml(e.name)}">${escapeHtml(e.name)}${e.department?' ('+escapeHtml(e.department)+')':''}</option>`).join("");
-  if(prior)select.value=prior;
+
+function renderScheduleEmployeeOptions(selected = "") {
+  const select = document.getElementById("scheduleEmployeeSelect");
+  if (!select) return;
+
+  const prior = selected || select.value;
+
+  if (!scheduleEmployees.length) {
+    select.innerHTML =
+      '<option value="">Employee list unavailable — check attendance API</option>';
+    select.disabled = scheduleFormEmployeeLocked;
+    return;
+  }
+
+  select.innerHTML =
+    '<option value="">Select employee</option>' +
+    scheduleEmployees.map(e =>
+      `<option value="${escapeHtml(e.name)}">${escapeHtml(e.name)}${
+        e.department ? " (" + escapeHtml(e.department) + ")" : ""
+      }</option>`
+    ).join("");
+
+  if (prior) select.value = prior;
+
+  // Lock employee selection only when assigning from an employee card.
+  select.disabled = scheduleFormEmployeeLocked;
 }
+
 function normalizeScheduleDates(){
   // Create a new daily copy of any still-open task that was due before today.
   // Each generated copy can be deleted independently by an assigned admin.
@@ -3560,7 +3582,7 @@ function renderScheduleManager() {
 
           <button
             class="schedule-small-btn"
-            onclick="openScheduleForm('${safeName}')"
+            onclick="openScheduleForm('${safeName}', true)"
           >
             Assign task
           </button>
@@ -3592,23 +3614,56 @@ function renderScheduleEmployeeDetail(){
   if(!items.length){root.innerHTML='<div class="schedule-empty">No schedules assigned to this employee yet.</div>';return;}
   root.innerHTML=items.map(item=>`<article class="schedule-task"><div class="schedule-task-top"><div><h3>${escapeHtml(item.title)}</h3>${item.description?`<p>${escapeHtml(item.description)}</p>`:''}<span class="schedule-pill ${scheduleStatusClass(item.status)}">${escapeHtml(item.status)}</span></div><select class="schedule-status-select" aria-label="Change status" onchange="changeScheduleStatus('${item.id}',this.value)">${statuses.map(s=>`<option ${s===item.status?'selected':''}>${s}</option>`).join('')}</select></div><div class="schedule-task-meta"><span>📅 ${escapeHtml(item.date||'—')}</span>${item.dueTime?`<span>◷ ${escapeHtml(item.dueTime)}</span>`:''}${item.isAutomatedCarry?`<span>↻ Carried from ${escapeHtml(item.carriedFrom||'previous day')}</span>`:''}</div><a class="schedule-drive" href="${safeHttpUrl(item.driveLink)}" target="_blank" rel="noopener noreferrer">↗ Open Google Drive materials</a><div class="schedule-task-actions"><button class="schedule-small-btn" onclick="editSchedule('${item.id}')">Edit</button><button class="schedule-small-btn schedule-danger" onclick="deleteSchedule('${item.id}')">Delete entry</button></div></article>`).join("");
 }
-function openScheduleForm(employee=""){
-  editingScheduleId=null;
-  document.getElementById("scheduleForm").reset();
-  document.getElementById("scheduleFormHeading").textContent="Create new schedule";
-  document.getElementById("scheduleDate").value=localISODate();
-  document.getElementById("scheduleInitialStatus").value="Pending";
-  document.getElementById("scheduleSendNow").checked=true;
-  renderScheduleEmployeeOptions(employee||selectedScheduleEmployee||"");
-  showScreen("scheduleFormScreen");
-  if(!scheduleEmployees.length)loadScheduleEmployees().then(()=>renderScheduleEmployeeOptions(employee));
+
+function openScheduleForm(employee = "", lockEmployee = false) {
+  editingScheduleId = null;
+  scheduleFormEmployeeLocked = lockEmployee;
+
+  const form = document.getElementById("scheduleForm");
+  const select = document.getElementById("scheduleEmployeeSelect");
+
+  form.reset();
+
+  const employeeName = String(employee || selectedScheduleEmployee || "").trim();
+
+  document.getElementById("scheduleFormHeading").textContent =
+    lockEmployee && employeeName
+      ? `Assign task to ${employeeName}`
+      : "Create new schedule";
+
+  document.getElementById("scheduleDate").value = localISODate();
+  document.getElementById("scheduleInitialStatus").value = "Pending";
+  document.getElementById("scheduleSendNow").checked = true;
+
+  renderScheduleEmployeeOptions(employeeName);
+
+if (select) {
+  select.value = employeeName;
+  select.disabled = lockEmployee;
 }
+
+  showScreen("scheduleFormScreen");
+
+  if (!scheduleEmployees.length) {
+    loadScheduleEmployees().then(() => {
+      renderScheduleEmployeeOptions(employeeName);
+
+      if (select) {
+        select.value = employeeName;
+        select.disabled = lockEmployee;
+      }
+    });
+  }
+}
+
 function editSchedule(id){
   const item=scheduleItems.find(x=>x.id===id);if(!item)return;
   editingScheduleId=id;
+  scheduleFormEmployeeLocked = false;
   document.getElementById("scheduleForm").reset();
   document.getElementById("scheduleFormHeading").textContent="Edit schedule";
   renderScheduleEmployeeOptions(item.employee);
+  document.getElementById("scheduleEmployeeSelect").disabled = false;
   document.getElementById("scheduleTitle").value=item.title||"";
   document.getElementById("scheduleDescription").value=item.description||"";
   document.getElementById("scheduleDriveLink").value=item.driveLink||"";
