@@ -3664,12 +3664,11 @@ function editSchedule(id){
   document.getElementById("scheduleFormHeading").textContent="Edit schedule";
   renderScheduleEmployeeOptions(item.employee);
   const employeeSelect = document.getElementById("scheduleEmployeeSelect");
-
 if (employeeSelect) {
   employeeSelect.value = item.employee;
   employeeSelect.disabled = true;
 }
-  document.getElementById("scheduleEmployeeSelect").disabled = false;
+  document.getElementById("scheduleEmployeeSelect").disabled = true;
   document.getElementById("scheduleTitle").value=item.title||"";
   document.getElementById("scheduleDescription").value=item.description||"";
   document.getElementById("scheduleDriveLink").value=item.driveLink||"";
